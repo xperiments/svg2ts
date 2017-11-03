@@ -191,9 +191,11 @@ function getTypescriptOutputMetadata(
     const contextDefaults = getContextDefaults(fileObj.file);
     const { path, name, file } = fileObj;
     return {
-        width,
-        height,
-        viewbox,
+        ...width ? { width: width } : Object.create(null),
+        ...height ? { height: height } : Object.create(null),
+        ...viewbox && viewbox.width && viewbox.height
+            ? { viewbox: viewbox }
+            : Object.create(null),
         path,
         name,
         file,
