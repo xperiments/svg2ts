@@ -6,5 +6,6 @@ node_modules/
 .env
 
 ### Customs ###
+tests/ts-output
 lib/*.*
 package-lock.json

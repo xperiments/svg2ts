@@ -7,5 +7,6 @@ node_modules/
 
 ### Customs ###
 src
+tests
 package-lock.json
 tsconfig.json
