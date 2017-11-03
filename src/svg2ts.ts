@@ -1,7 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ProgressBar from 'progress';
-import { toCamelCase, capitalize, printObj, walkSync } from './utils';
+import {
+    toCamelCase,
+    capitalize,
+    printObj,
+    walkSync,
+    minifySvg
+} from './utils';
 import { banner } from './banner';
 
 export interface SVG2TSContext {
@@ -17,14 +23,14 @@ export interface SVG2TSSourceFile {
     path: string;
 }
 export interface SVG2TSOutputFile extends SVG2TSDimensions, SVG2TSSourceFile {
-    viewbox?: SVG2TSDimensions | undefined;
+    viewBox?: SVG2TSDimensions | undefined;
     contextInterface?: string | undefined;
     contextDefaults?: { [key: string]: string | number } | undefined;
 }
 export interface SVG2TSSvgMetadata {
     width?: number | undefined;
     height?: number | undefined;
-    viewbox?: SVG2TSDimensions | undefined;
+    viewBox?: SVG2TSDimensions | undefined;
 }
 
 const svgReg = /<svg[^>]+[^>]*>/;
@@ -32,15 +38,15 @@ const extractorRegExps = {
     root: /<svg\s[^>]+>/,
     width: /\bwidth=(['"])([^%]+?)\1/,
     height: /\bheight=(['"])([^%]+?)\1/,
-    viewbox: /\bviewBox=(['"])(.+?)\1/
+    viewBox: /\bviewBox=(['"])(.+?)\1/
 };
 
 function isSVG(buffer: string) {
     return svgReg.test(buffer);
 }
 
-function parseViewbox(viewbox: any): SVG2TSDimensions {
-    const bounds = viewbox.split(' ');
+function parseViewbox(viewBox: any): SVG2TSDimensions {
+    const bounds = viewBox.split(' ');
     const width = parseInt(bounds[2], 10);
     const height = parseInt(bounds[3], 10);
     return { width, height };
@@ -49,11 +55,11 @@ function parseViewbox(viewbox: any): SVG2TSDimensions {
 function parseAttributes(root: any): SVG2TSSvgMetadata {
     const width = root.match(extractorRegExps.width);
     const height = root.match(extractorRegExps.height);
-    const viewbox = root.match(extractorRegExps.viewbox);
+    const viewBox = root.match(extractorRegExps.viewBox);
     return {
         ...width ? { width: parseInt(width[2], 10) } : Object.create(null),
         ...height ? { height: parseInt(height[2], 10) } : Object.create(null),
-        ...viewbox ? { viewbox: parseViewbox(viewbox[2]) } : Object.create(null)
+        ...viewBox ? { viewBox: parseViewbox(viewBox[2]) } : Object.create(null)
     };
 }
 
@@ -62,30 +68,32 @@ function getSvgDimensions(attrs: any): SVG2TSSvgMetadata {
     return {
         width,
         height,
-        ...attrs.viewbox ? { viewbox: attrs.viewbox } : Object.create(null)
+        ...attrs.viewBox ? { viewBox: attrs.viewBox } : Object.create(null)
     };
 }
 
 function getSvgDimensionsFromViewBox(attrs: any): SVG2TSSvgMetadata {
-    const ratio = attrs.viewbox.width / attrs.viewbox.height;
+    const ratio = attrs.viewBox.width / attrs.viewBox.height;
     if (attrs.width) {
         return {
             width: attrs.width,
             height: Math.floor(attrs.width / ratio),
-            ...attrs.viewbox ? { viewbox: attrs.viewbox } : Object.create(null)
+            ...attrs.viewBox ? { viewBox: attrs.viewBox } : Object.create(null)
         };
     }
     if (attrs.height) {
         return {
             width: Math.floor(attrs.height * ratio),
             height: attrs.height,
-            ...attrs.viewbox ? { viewbox: attrs.viewbox } : Object.create(null)
+            ...attrs.viewBox ? { viewBox: attrs.viewBox } : Object.create(null)
         };
     }
 
     return {
-        width: attrs.viewbox.width,
-        height: attrs.viewbox.height
+        viewBox: {
+            width: attrs.viewBox.width,
+            height: attrs.viewBox.height
+        }
     };
 }
 
@@ -97,7 +105,7 @@ function getSvgMetadata(svgFile: SVG2TSSourceFile) {
         if (attrs.width && attrs.height) {
             return getSvgDimensions(attrs);
         }
-        if (attrs.viewbox) {
+        if (attrs.viewBox) {
             return getSvgDimensionsFromViewBox(attrs);
         }
     }
@@ -186,15 +194,15 @@ function loadSvgFile(fileName: string): SVG2TSSourceFile {
 function getTypescriptOutputMetadata(
     fileObj: SVG2TSSourceFile
 ): SVG2TSOutputFile {
-    const { width, height, viewbox } = getSvgMetadata(fileObj);
+    const { width, height, viewBox } = getSvgMetadata(fileObj);
     const contextInterface = getContextDefinition(fileObj.file);
     const contextDefaults = getContextDefaults(fileObj.file);
     const { path, name, file } = fileObj;
     return {
         ...width ? { width: width } : Object.create(null),
         ...height ? { height: height } : Object.create(null),
-        ...viewbox && viewbox.width && viewbox.height
-            ? { viewbox: viewbox }
+        ...viewBox && viewBox.width && viewBox.height
+            ? { viewBox: viewBox }
             : Object.create(null),
         path,
         name,
@@ -220,16 +228,14 @@ function saveTypescriptFile(output: string) {
             fs.mkdirSync(destBase);
         }
         delete svgFile.path;
-        svgFile.file = svgFile.file
-            .replace(/<svg.[^>]*>/g, '')
-            .replace(/<\/svg>/gi, '');
+        svgFile.file = minifySvg(svgFile.file);
         fs.writeFileSync(filePath, getOutputTemplate(svgFile));
     };
 }
 
 function hasKnownDimensions(fileObj: SVG2TSSourceFile) {
-    const { width, height, viewbox } = getSvgMetadata(fileObj);
-    return (width && height) || (viewbox && viewbox.width && viewbox.height);
+    const { width, height, viewBox } = getSvgMetadata(fileObj);
+    return (width && height) || (viewBox && viewBox.width && viewBox.height);
 }
 export function svg2ts(input: string, output: string) {
     banner.forEach(_ => console.log(_));

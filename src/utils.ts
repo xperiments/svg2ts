@@ -1,6 +1,45 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+export function minifySvg(source: string): string {
+    source = source.replace(/<svg.[^>]*>/g, '').replace(/<\/svg>/gi, '');
+    const styleRegExp = /(<style(([^>][\s\S])+?)?>)([\s\S]+?)(<\/style>)/g;
+    return minifyXML(
+        source.replace(styleRegExp, (match, $1, $2, $3, $4, $5) => {
+            return `${$1}${minifyCss($4)}${$5}`;
+        })
+    );
+}
+function minifyCss(source: string): string {
+    return source
+        .replace(/\/\*.*\*\/|\/\*[\s\S]*?\*\/|\n|\t|\v|\s{2,}/g, '')
+        .replace(/\s*\{\s*/g, '{')
+        .replace(/\s*\}\s*/g, '}')
+        .replace(/\s*\:\s*/g, ':')
+        .replace(/\s*\;\s*/g, ';')
+        .replace(/\s*\,\s*/g, ',')
+        .replace(/\s*\~\s*/g, '~')
+        .replace(/\s*\>\s*/g, '>')
+        .replace(/\s*\+\s*/g, '+')
+        .replace(/\s*\!\s*/g, '!');
+}
+
+function minifyXML(source: string): string {
+    source = source
+        .replace(/\<\!--\s*?[^\s?\[][\s\S]*?--\>/g, '')
+        .replace(/\>\s*\</g, '><');
+    source = source.replace(/<([^>]+)>/g, function(str, tagInner) {
+        tagInner = tagInner
+            .replace(/^ +| +$/g, '') // Not .trim() that removes \f.
+            .replace(/(?: *\/ +| +\/ *)/g, '/') // Remove whitespaces in </ p> or <br />
+            .replace(/ *= */g, '=')
+            .replace(/( +)/g, ' ');
+        console.log('->', tagInner, '<-');
+        return '<' + tagInner + '>';
+    });
+    return source.trim();
+}
+
 export function toCamelCase(str: string) {
     return str
         .replace(/[\s|_|-](.)/g, function($1) {
