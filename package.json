@@ -1,0 +1,29 @@
+{
+    "name": "svg2ts",
+    "version": "0.1.0",
+    "description": "",
+    "main": "lib/index",
+    "bin": {
+        "svg2ts": "./lib/index.js"
+    },
+    "scripts": {
+        "build": "tsc"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/xperiments/svg2ts.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/xperiments/svg2ts/issues"
+    },
+    "homepage": "https://github.com/xperiments/svg2ts#readme",
+    "devDependencies": {
+        "@types/node": "^8.0.47",
+        "@types/progress": "^2.0.0",
+        "typescript": "^2.6.1"
+    },
+    "types": "lib/index"
+}

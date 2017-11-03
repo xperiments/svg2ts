@@ -1,0 +1,11 @@
+### Node ###
+node_modules/
+.npm
+.eslintcache
+.node_repl_history
+.env
+
+### Customs ###
+src
+package-lock.json
+tsconfig.json
