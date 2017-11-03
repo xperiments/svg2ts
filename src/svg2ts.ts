@@ -51,9 +51,9 @@ function parseAttributes(root: any): SVG2TSSvgMetadata {
     const height = root.match(extractorRegExps.height);
     const viewbox = root.match(extractorRegExps.viewbox);
     return {
-        ...width ? { width: parseInt(width[2], 10) } : {},
-        ...height ? { height: parseInt(height[2], 10) } : {},
-        ...viewbox ? { viewbox: parseViewbox(viewbox[2]) } : {}
+        ...width ? { width: parseInt(width[2], 10) } : Object.create(null),
+        ...height ? { height: parseInt(height[2], 10) } : Object.create(null),
+        ...viewbox ? { viewbox: parseViewbox(viewbox[2]) } : Object.create(null)
     };
 }
 
@@ -62,7 +62,7 @@ function getSvgDimensions(attrs: any): SVG2TSSvgMetadata {
     return {
         width,
         height,
-        ...attrs.viewbox ? { viewbox: attrs.viewbox } : {}
+        ...attrs.viewbox ? { viewbox: attrs.viewbox } : Object.create(null)
     };
 }
 
@@ -72,14 +72,14 @@ function getSvgDimensionsFromViewBox(attrs: any): SVG2TSSvgMetadata {
         return {
             width: attrs.width,
             height: Math.floor(attrs.width / ratio),
-            ...attrs.viewbox ? { viewbox: attrs.viewbox } : {}
+            ...attrs.viewbox ? { viewbox: attrs.viewbox } : Object.create(null)
         };
     }
     if (attrs.height) {
         return {
             width: Math.floor(attrs.height * ratio),
             height: attrs.height,
-            ...attrs.viewbox ? { viewbox: attrs.viewbox } : {}
+            ...attrs.viewbox ? { viewbox: attrs.viewbox } : Object.create(null)
         };
     }
 
@@ -104,7 +104,7 @@ function getSvgMetadata(svgFile: SVG2TSSourceFile) {
     console.log(
         `[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`
     );
-    return {};
+    return Object.create(null);
 }
 
 function getOutputTemplate(svgFile: SVG2TSOutputFile) {
@@ -136,7 +136,10 @@ function getContextDefinition(file: string) {
 
     if (hasDynamicData) {
         const matches = <RegExpMatchArray>file.match(reg);
-        const result = matches.reduce(contextDefinitionReducer, {});
+        const result = matches.reduce(
+            contextDefinitionReducer,
+            Object.create(null)
+        );
         return JSON.stringify(result)
             .replace(/"/g, '')
             .replace(/,/g, ';');
@@ -157,7 +160,7 @@ function getContextDefaults(file: string): SVG2TSContext | undefined {
     const hasDynamicData = file.match(reg);
     const matches = <RegExpMatchArray>file.match(reg);
     if (hasDynamicData) {
-        return matches.reduce(contextDefaultsReducer, {});
+        return matches.reduce(contextDefaultsReducer, Object.create(null));
     } else {
         return undefined;
     }
@@ -194,8 +197,12 @@ function getTypescriptOutputMetadata(
         path,
         name,
         file,
-        ...contextInterface ? { contextInterface: contextInterface } : {},
-        ...contextDefaults ? { contextDefaults: contextDefaults } : {}
+        ...contextInterface
+            ? { contextInterface: contextInterface }
+            : Object.create(null),
+        ...contextDefaults
+            ? { contextDefaults: contextDefaults }
+            : Object.create(null)
     };
 }
 
