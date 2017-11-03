@@ -36,9 +36,9 @@ export interface SVG2TSSvgMetadata {
 const svgReg = /<svg[^>]+[^>]*>/;
 const extractorRegExps = {
     root: /<svg\s[^>]+>/,
-    width: /\bwidth=(['"])([^%]+?)\1/,
-    height: /\bheight=(['"])([^%]+?)\1/,
-    viewBox: /\bviewBox=(['"])(.+?)\1/
+    width: /\bwidth ?= ?(['"])([^%]+?)\1/,
+    height: /\bheight ?= ?(['"])([^%]+?)\1/,
+    viewBox: /\bviewBox ?= ?(['"])(.+?)\1/
 };
 
 function isSVG(buffer: string) {
