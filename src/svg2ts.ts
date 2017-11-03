@@ -89,7 +89,8 @@ function getSvgDimensionsFromViewBox(attrs: any): SVG2TSSvgMetadata {
     };
 }
 
-function getSvgMetadata(buffer: string) {
+function getSvgMetadata(svgFile: SVG2TSSourceFile) {
+    const buffer = svgFile.file;
     const root = buffer.match(extractorRegExps.root);
     if (root) {
         const attrs = parseAttributes(root[0]);
@@ -100,7 +101,10 @@ function getSvgMetadata(buffer: string) {
             return getSvgDimensionsFromViewBox(attrs);
         }
     }
-    throw new TypeError('invalid svg');
+    console.log(
+        `[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`
+    );
+    return {};
 }
 
 function getOutputTemplate(svgFile: SVG2TSOutputFile) {
@@ -179,7 +183,7 @@ function loadSvgFile(fileName: string): SVG2TSSourceFile {
 function getTypescriptOutputMetadata(
     fileObj: SVG2TSSourceFile
 ): SVG2TSOutputFile {
-    const { width, height, viewbox } = getSvgMetadata(fileObj.file);
+    const { width, height, viewbox } = getSvgMetadata(fileObj);
     const contextInterface = getContextDefinition(fileObj.file);
     const contextDefaults = getContextDefaults(fileObj.file);
     const { path, name, file } = fileObj;
@@ -214,6 +218,10 @@ function saveTypescriptFile(output: string) {
     };
 }
 
+function hasKnownDimensions(fileObj: SVG2TSSourceFile) {
+    const { width, height, viewbox } = getSvgMetadata(fileObj);
+    return (width && height) || (viewbox && viewbox.width && viewbox.height);
+}
 export function svg2ts(input: string, output: string) {
     banner.forEach(_ => console.log(_));
     if (!fs.existsSync(input)) {
@@ -221,7 +229,10 @@ export function svg2ts(input: string, output: string) {
     } else {
         console.log('[svg2ts]\x1b[35m Converting svg to TypesScript\x1b[0m');
         const files = walkSync(input).filter(filterSvg);
-        const realSvgFiles = files.map(loadSvgFile).filter(filterSvgContent);
+        const realSvgFiles = files
+            .map(loadSvgFile)
+            .filter(filterSvgContent)
+            .filter(hasKnownDimensions);
         realSvgFiles
             .map(getTypescriptOutputMetadata)
             .forEach(saveTypescriptFile(output));
