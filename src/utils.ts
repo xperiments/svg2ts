@@ -34,7 +34,6 @@ function minifyXML(source: string): string {
             .replace(/(?: *\/ +| +\/ *)/g, '/') // Remove whitespaces in </ p> or <br />
             .replace(/ *= */g, '=')
             .replace(/( +)/g, ' ');
-        console.log('->', tagInner, '<-');
         return '<' + tagInner + '>';
     });
     return source.trim();
