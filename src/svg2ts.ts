@@ -194,7 +194,12 @@ function getTypescriptOutputMetadata(
     const { width, height, viewBox } = getSvgMetadata(fileObj);
     const contextInterface = getContextDefinition(fileObj.file);
     const contextDefaults = getContextDefaults(fileObj.file);
-    const { path, name, file } = fileObj;
+    const { path, name } = fileObj;
+    let { file } = fileObj;
+    if (contextInterface) {
+        file = removeDefaultsFromVars(file);
+    }
+    file = file.replace(/'/g, "\\'");
     return {
         ...width ? { width: width } : {},
         ...height ? { height: height } : {},
