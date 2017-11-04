@@ -2,11 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ProgressBar from 'progress';
 import {
-    toCamelCase,
     capitalize,
+    dotObject,
+    minifySvg,
     printObj,
-    walkSync,
-    minifySvg
+    removeDefaultsFromVars,
+    toCamelCase,
+    walkSync
 } from './utils';
 import { banner } from './banner';
 
@@ -14,8 +16,10 @@ export interface SVG2TSContext {
     [key: string]: string | number;
 }
 export interface SVG2TSDimensions {
-    width: number | undefined;
-    height: number | undefined;
+    minx?: number | undefined;
+    miny?: number | undefined;
+    width?: number | undefined;
+    height?: number | undefined;
 }
 export interface SVG2TSSourceFile {
     name: string;
@@ -45,11 +49,11 @@ function isSVG(buffer: string) {
     return svgReg.test(buffer);
 }
 
-function parseViewbox(viewBox: any): SVG2TSDimensions {
-    const bounds = viewBox.split(' ');
-    const width = parseInt(bounds[2], 10);
-    const height = parseInt(bounds[3], 10);
-    return { width, height };
+function parseViewbox(viewBox: string): SVG2TSDimensions {
+    const [minx, miny, width, height] = viewBox.split(' ').map(_ => {
+        return parseInt(_, 10);
+    });
+    return { minx, miny, width, height };
 }
 
 function parseAttributes(root: any): SVG2TSSvgMetadata {
@@ -130,16 +134,18 @@ function getOutputTemplate(svgFile: SVG2TSOutputFile) {
 }
 
 function contextDefinitionReducer(acc: any, match: string) {
-    const reg = /\${(.+?)\|(.+?)}/g;
+    const reg = /\{{(.+?)\|(.+?)}}/g;
     const value = match.replace(reg, '$1');
-    acc[match.replace(reg, '$2') + '?'] = isNaN((<any>value) as number)
-        ? 'string'
-        : 'number';
+    dotObject(
+        `dot.${match.replace(reg, '$2')}`,
+        acc,
+        isNaN((<any>value) as number) ? 'string' : 'number'
+    );
     return acc;
 }
 
 function getContextDefinition(file: string) {
-    const reg = /\${(.+?)\|(.+?)}/g;
+    const reg = /\{{(.+?)\|(.+?)}}/g;
     const hasDynamicData = file.match(reg);
 
     if (hasDynamicData) {
@@ -154,14 +160,18 @@ function getContextDefinition(file: string) {
 }
 
 function contextDefaultsReducer(acc: any, match: string) {
-    const reg = /\${(.+?)\|(.+?)}/g;
+    const reg = /\{{(.+?)\|(.+?)}}/g;
     const value = match.replace(reg, '$1');
-    acc[match.replace(reg, '$2')] = value;
+    dotObject(
+        `dot.${match.replace(reg, '$2')}`,
+        acc,
+        isNaN((<any>value) as number) ? value : parseInt(value, 10)
+    );
     return acc;
 }
 
 function getContextDefaults(file: string): SVG2TSContext | undefined {
-    const reg = /\${(.+?)\|(.+?)}/g;
+    const reg = /\{{(.+?)\|(.+?)}}/g;
     const hasDynamicData = file.match(reg);
     const matches = <RegExpMatchArray>file.match(reg);
     if (hasDynamicData) {
