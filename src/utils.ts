@@ -39,6 +39,9 @@ function minifyXML(source: string): string {
     return source.trim();
 }
 
+export function removeDefaultsFromVars(source: string): string {
+    return source.replace(/\{{(.+?)\|(.+?)}}/g, '{{$2}}');
+}
 export function toCamelCase(str: string) {
     return str
         .replace(/[\s|_|-](.)/g, function($1) {
@@ -94,4 +97,20 @@ export function walkSync(dir: string, filelist: string[] = []): string[] {
         }
     });
     return filelist;
+}
+
+export function dotObject(path: string, obj: any = {}, value: any = null) {
+    const result = path
+        .split('.')
+        .slice(1)
+        .reduce((parent, key, index, arr) => {
+            parent[key] =
+                index === arr.length - 1
+                    ? typeof value === 'object'
+                      ? Object.assign(parent[key], value)
+                      : value
+                    : parent[key] || {};
+            return parent[key];
+        }, obj);
+    return value ? obj : result;
 }
