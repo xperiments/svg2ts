@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { SVG2TSSourceFile, SVG2TSOutputFile } from './types';
 
 export function minifySvg(source: string): string {
     source = source.replace(/<svg.[^>]*>/g, '').replace(/<\/svg>/gi, '');
@@ -113,4 +114,20 @@ export function dotObject(path: string, obj: any = {}, value: any = null) {
             return parent[key];
         }, obj);
     return value ? obj : result;
+}
+
+export function generateIndexFile(
+    outputDir: string,
+    files: SVG2TSOutputFile[]
+) {
+    const indexFile = files
+        .map((file: SVG2TSOutputFile) => {
+            const svgObjectName = capitalize(toCamelCase(file.name));
+            const context = file.contextDefaults
+                ? `, ${svgObjectName}Context`
+                : '';
+            return `export { ${svgObjectName}${context} } from './${file.name}';`;
+        })
+        .join('\n');
+    fs.writeFileSync(outputDir + path.sep + 'index.ts', indexFile);
 }

@@ -8,11 +8,19 @@ import {
     printObj,
     removeDefaultsFromVars,
     toCamelCase,
-    walkSync
+    walkSync,
+    generateIndexFile
 } from './utils';
 import { banner } from './banner';
+import {
+    SVG2TSDimensions,
+    SVG2TSSvgMetadata,
+    SVG2TSSourceFile,
+    SVG2TSOutputFile,
+    SVG2TSContext
+} from './types';
+import { Svg2TsCmd } from './index';
 
-const svgReg = /<svg[^>]+[^>]*>/;
 const extractorRegExps = {
     root: /<svg\s[^>]+>/,
     width: /\bwidth ?= ?(['"])([^%]+?)\1/,
@@ -21,7 +29,7 @@ const extractorRegExps = {
 };
 
 function isSVG(buffer: string) {
-    return svgReg.test(buffer);
+    return /<svg[^>]+[^>]*>/.test(buffer);
 }
 
 function parseViewbox(viewBox: string): SVG2TSDimensions {
@@ -92,20 +100,6 @@ function getSvgMetadata(svgFile: SVG2TSSourceFile) {
         `[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`
     );
     return {};
-}
-
-function getOutputTemplate(svgFile: SVG2TSOutputFile) {
-    const contextInterface = svgFile.contextInterface;
-    if (contextInterface) {
-        delete svgFile.contextInterface;
-    }
-    // prettier-ignore
-    const interfaceOutput =
-        contextInterface
-        ? `export interface ${capitalize(toCamelCase(svgFile.name))}Context ${contextInterface};`
-        : '';
-    // prettier-ignore
-    return `${interfaceOutput}export const ${capitalize(toCamelCase(svgFile.name))} = ${printObj(svgFile)};`;
 }
 
 function contextDefinitionReducer(acc: any, match: string) {
@@ -199,7 +193,8 @@ function getTypescriptOutputMetadata(
     };
 }
 
-function saveTypescriptFile(output: string) {
+function saveFile(output: string, blueprint: string) {
+    const render = require(`./blueprints/${blueprint}`).render;
     return (svgFile: SVG2TSOutputFile) => {
         const rootBase = path
             .dirname(svgFile.path as string)
@@ -212,7 +207,8 @@ function saveTypescriptFile(output: string) {
         }
         delete svgFile.path;
         svgFile.file = minifySvg(svgFile.file);
-        fs.writeFileSync(filePath, getOutputTemplate(svgFile));
+
+        fs.writeFileSync(filePath, render(svgFile));
     };
 }
 
@@ -220,7 +216,9 @@ function hasKnownDimensions(fileObj: SVG2TSSourceFile) {
     const { width, height, viewBox } = getSvgMetadata(fileObj);
     return (width && height) || (viewBox && viewBox.width && viewBox.height);
 }
-export function svg2ts(input: string, output: string) {
+
+export function svg2ts(options: Svg2TsCmd) {
+    const { input, output, blueprint } = options;
     banner.forEach(_ => console.log(_));
     if (!fs.existsSync(input)) {
         console.log(`Invalid input dir: ${input}`);
@@ -231,9 +229,12 @@ export function svg2ts(input: string, output: string) {
             .map(loadSvgFile)
             .filter(filterSvgContent)
             .filter(hasKnownDimensions);
-        realSvgFiles
-            .map(getTypescriptOutputMetadata)
-            .forEach(saveTypescriptFile(output));
+        const tsMetadata = realSvgFiles.map(getTypescriptOutputMetadata);
+
+        tsMetadata.forEach(saveFile(output, blueprint));
+
+        generateIndexFile(output, tsMetadata);
+
         console.log(
             `[svg2ts]\x1b[35m Processed \x1b[0m${realSvgFiles.length}\x1b[35m svg's into: \x1b[0m${output}\x1b[0m`
         );
