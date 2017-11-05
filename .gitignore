@@ -8,5 +8,5 @@ node_modules/
 
 ### Customs ###
 tests/ts-output
-lib/*.*
+lib
 package-lock.json
