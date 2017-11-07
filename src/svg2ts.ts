@@ -8,8 +8,7 @@ import {
     printObj,
     removeDefaultsFromVars,
     toCamelCase,
-    walkSync,
-    generateIndexFile
+    walkSync
 } from './utils';
 import { banner } from './banner';
 import {
@@ -113,32 +112,13 @@ function getTypescriptOutputMetadata(
     };
 }
 
-function saveFile(output: string, blueprint: string) {
-    const render = require(`./blueprints/${blueprint}`).render;
-    return (svgFile: SVG2TSOutputFile) => {
-        const rootBase = path
-            .dirname(svgFile.path as string)
-            .split(path.sep)
-            .slice(2);
-        const filePath = output + path.sep + svgFile.name + '.ts';
-        const destBase = path.dirname(filePath);
-        if (!fs.existsSync(destBase)) {
-            fs.mkdirSync(destBase);
-        }
-        delete svgFile.path;
-        svgFile.file = minifySvg(svgFile.file);
-
-        fs.writeFileSync(filePath, render(svgFile));
-    };
-}
-
 function hasKnownDimensions(fileObj: SVG2TSSourceFile) {
     const { width, height, viewBox } = getSvgMetadata(fileObj);
     return (width && height) || (viewBox && viewBox.width && viewBox.height);
 }
 
 export function svg2ts(options: Svg2TsCmd) {
-    const { input, output, blueprint } = options;
+    const { input, output, blueprint, module } = options;
     banner.forEach(_ => console.log(_));
     if (!fs.existsSync(input)) {
         console.log(`Invalid input dir: ${input}`);
@@ -150,10 +130,13 @@ export function svg2ts(options: Svg2TsCmd) {
             .filter(filterSvgContent)
             .filter(hasKnownDimensions);
         const tsMetadata = realSvgFiles.map(getTypescriptOutputMetadata);
+        const {
+            saveFile,
+            generateIndexFile
+        } = require(`./blueprints/${blueprint}`);
+        tsMetadata.forEach(saveFile(options, blueprint));
 
-        tsMetadata.forEach(saveFile(output, blueprint));
-
-        generateIndexFile(output, tsMetadata);
+        generateIndexFile(options, tsMetadata);
 
         console.log(
             `[svg2ts]\x1b[35m Processed \x1b[0m${realSvgFiles.length}\x1b[35m svg's into: \x1b[0m${output}\x1b[0m`
