@@ -7,6 +7,8 @@ const packageJson = require('../package.json');
 export interface Svg2TsCmd {
     output: string;
     input: string;
+    blueprint: string;
+    module: string;
 }
 
 function main() {
@@ -15,11 +17,16 @@ function main() {
     const commandLineToolsOptions = {
         aliases: {
             output: 'o',
-            input: 'i'
+            input: 'i',
+            blueprint: 'b',
+            module: 'm'
         },
         help: {
             input: 'svg source dir|./svg',
-            output: 'ts output dir|./svg-ts-out'
+            output: 'ts output dir|./svg-ts-out',
+            blueprint:
+                "blueprint to use 'typescript'[default] 'angular' |typescript",
+            module: 'Module name for angular blueprint |Svg2ts'
         },
         // prettier-ignore
         banner: banner,
@@ -33,7 +40,9 @@ function main() {
     if (!cmd.args.input || !cmd.args.output) {
         return cmd.help();
     } else {
-        svg2ts(cmd.args.input, cmd.args.output);
+        cmd.args.blueprint = cmd.args.blueprint || 'typescript';
+        cmd.args.module = cmd.args.module || 'Svg2ts';
+        svg2ts(cmd.args);
     }
 }
 main();
