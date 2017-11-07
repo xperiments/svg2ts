@@ -53,7 +53,12 @@ export function toCamelCase(str: string) {
             return $1.toLowerCase();
         });
 }
-
+export function toKebabCase(str: string) {
+    return str
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .replace(/([^a-zA-Z])/g, '-')
+        .toLowerCase();
+}
 export function capitalize(str: string) {
     return str[0].toUpperCase() + str.slice(1);
 }
@@ -100,6 +105,15 @@ export function walkSync(dir: string, filelist: string[] = []): string[] {
     return filelist;
 }
 
+export function mkdirSyncRecursive(directory: string) {
+    var path = directory.replace(/\/$/, '').split('/');
+
+    for (var i = 1; i <= path.length; i++) {
+        var segment = path.slice(0, i).join('/');
+        !fs.existsSync(segment) ? fs.mkdirSync(segment) : null;
+    }
+}
+
 export function dotObject(path: string, obj: any = {}, value: any = null) {
     const result = path
         .split('.')
@@ -116,18 +130,12 @@ export function dotObject(path: string, obj: any = {}, value: any = null) {
     return value ? obj : result;
 }
 
-export function generateIndexFile(
-    outputDir: string,
-    files: SVG2TSOutputFile[]
-) {
-    const indexFile = files
-        .map((file: SVG2TSOutputFile) => {
-            const svgObjectName = capitalize(toCamelCase(file.name));
-            const context = file.contextDefaults
-                ? `, ${svgObjectName}Context`
-                : '';
-            return `export { ${svgObjectName}${context} } from './${file.name}';`;
-        })
-        .join('\n');
-    fs.writeFileSync(outputDir + path.sep + 'index.ts', indexFile);
+export function tsc<T>(template: string, context: T): (context: T) => string {
+    const keys = Object.keys(context),
+        replacer = /@{[\s]?([\s\S]*)[\s]?}/;
+    while (replacer.test(template)) {
+        template = template.replace(replacer, '${$1}');
+    }
+    const fnTemplate = 'const {' + keys + '}=context; return`' + template + '`';
+    return new Function('context', fnTemplate) as (context: T) => string;
 }
