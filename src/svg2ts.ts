@@ -4,7 +4,6 @@ import * as ProgressBar from 'progress';
 import {
     capitalize,
     dotObject,
-    minifySvg,
     printObj,
     removeDefaultsFromVars,
     toCamelCase,
@@ -38,7 +37,9 @@ function getContextDefinition(file: string) {
 
     if (hasDynamicData) {
         const matches = <RegExpMatchArray>file.match(reg);
-        const result = matches.reduce(contextDefinitionReducer, {});
+        const result = matches.reduce(contextDefinitionReducer, {
+            uuid: 'number'
+        });
         return JSON.stringify(result)
             .replace(/"/g, '')
             .replace(/,/g, ';');
