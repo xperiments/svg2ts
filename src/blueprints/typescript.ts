@@ -21,7 +21,7 @@ export function render(svgFile: SVG2TSOutputFile, options: Svg2TsCmd) {
         delete svgFile.contextInterface;
     }
 
-    svgFile.file = svgFile.file
+    svgFile.svg = svgFile.svg
         .replace(
             /(<style(.+?)?>)([\s\S]+?)(<\/style>)/g,
             (match, $1, $2, $3, $4) => {
@@ -56,7 +56,7 @@ export function saveFile(options: Svg2TsCmd, blueprint: string) {
             mkdirSyncRecursive(destBase);
         }
         delete svgFile.path;
-        svgFile.file = minifySvg(svgFile.file);
+        svgFile.svg = minifySvg(svgFile.svg);
 
         fs.writeFileSync(filePath, render(svgFile, options));
     };

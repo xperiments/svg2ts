@@ -30,7 +30,7 @@ export function parseAttributes(root: any): SVG2TSSvgMetadata {
 }
 
 export function getSvgMetadata(svgFile: SVG2TSSourceFile) {
-    const buffer = svgFile.file;
+    const buffer = svgFile.svg;
     const root = buffer.match(extractorRegExps.root);
     if (root) {
         const attrs = parseAttributes(root[0]);

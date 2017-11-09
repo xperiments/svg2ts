@@ -9,7 +9,7 @@ export interface SVG2TSDimensions {
 }
 export interface SVG2TSSourceFile {
     name: string;
-    file: string;
+    svg: string;
     path: string;
 }
 export interface SVG2TSOutputFile extends SVG2TSDimensions, SVG2TSSourceFile {

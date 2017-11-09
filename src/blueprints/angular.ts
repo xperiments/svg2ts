@@ -37,7 +37,7 @@ export function saveFile(options: Svg2TsCmd, blueprint: string) {
             mkdirSyncRecursive(destBase);
         }
         delete svgFile.path;
-        svgFile.file = minifySvg(svgFile.file);
+        svgFile.svg = minifySvg(svgFile.svg);
 
         fs.writeFileSync(filePath, renderTS(svgFile, options));
 
@@ -69,7 +69,7 @@ export function generateIndexFile(
         })
         .join('\n').concat(`
             export function getNgSvgTemplate(svg: any, context: string = 'context') {
-              return \`<svg [attr.class]="'${options.module}-'+context.uuid" [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">\${svg.file}</svg>\`
+              return \`<svg [attr.class]="'${options.module}-'+context.uuid" [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">\${svg.svg}</svg>\`
                 .replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g, \` [attr.$1]="\${context}.$2"\`)
                 .replace(/{{(.+?)}}/g, '{{context.$1}}')
             }

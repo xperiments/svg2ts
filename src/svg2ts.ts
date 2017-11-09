@@ -75,7 +75,7 @@ function filterSvg(file: string) {
 }
 
 function filterSvgContent(svgFilePath: SVG2TSSourceFile): boolean {
-    return isSVG(svgFilePath.file);
+    return isSVG(svgFilePath.svg);
 }
 
 function loadSvgFile(fileName: string): SVG2TSSourceFile {
@@ -83,7 +83,7 @@ function loadSvgFile(fileName: string): SVG2TSSourceFile {
     return {
         path: fileName,
         name: path.basename(fileName).replace('.svg', ''),
-        file: svg
+        svg: svg
     };
 }
 
@@ -91,14 +91,14 @@ function getTypescriptOutputMetadata(
     fileObj: SVG2TSSourceFile
 ): SVG2TSOutputFile {
     const { width, height, viewBox } = getSvgMetadata(fileObj);
-    const contextInterface = getContextDefinition(fileObj.file);
-    const contextDefaults = getContextDefaults(fileObj.file);
+    const contextInterface = getContextDefinition(fileObj.svg);
+    const contextDefaults = getContextDefaults(fileObj.svg);
     const { path, name } = fileObj;
-    let { file } = fileObj;
+    let { svg } = fileObj;
     if (contextInterface) {
         file = removeDefaultsFromVars(file);
     }
-    file = file.replace(/'/g, "\\'");
+    svg = svg.replace(/'/g, "\\'");
     return {
         ...width ? { width: width } : {},
         ...height ? { height: height } : {},
@@ -107,7 +107,7 @@ function getTypescriptOutputMetadata(
             : {},
         path,
         name,
-        file,
+        svg,
         ...contextInterface ? { contextInterface: contextInterface } : {},
         ...contextDefaults ? { contextDefaults: contextDefaults } : {}
     };
