@@ -1,28 +1,68 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { SVG2TSSourceFile, SVG2TSOutputFile } from './types';
-
 export function minifySvg(source: string): string {
     source = source.replace(/<svg.[^>]*>/g, '').replace(/<\/svg>/gi, '');
     const styleRegExp = /(<style(([^>][\s\S])+?)?>)([\s\S]+?)(<\/style>)/g;
     return minifyXML(
-        source.replace(styleRegExp, (match, $1, $2, $3, $4, $5) => {
-            return `${$1}${minifyCss($4)}${$5}`;
-        })
+        source
+            .replace(
+                /(<style(.+?)?>)([\s\S]+?)(<\/style>)/g,
+                (match, $1, $2, $3, $4) => {
+                    const cssmin = minifyCss(
+                        $3.replace(/{{/g, '_oo_').replace(/}}/g, '_OO_')
+                    );
+                    return `${$1}${cssmin}${$4}`;
+                }
+            )
+            .replace(/_oo_/g, '{{')
+            .replace(/_OO_/g, '}}')
     );
 }
-function minifyCss(source: string): string {
-    return source
-        .replace(/\/\*.*\*\/|\/\*[\s\S]*?\*\/|\n|\t|\v|\s{2,}/g, '')
-        .replace(/\s*\{\s*/g, '{')
-        .replace(/\s*\}\s*/g, '}')
-        .replace(/\s*\:\s*/g, ':')
-        .replace(/\s*\;\s*/g, ';')
-        .replace(/\s*\,\s*/g, ',')
-        .replace(/\s*\~\s*/g, '~')
-        .replace(/\s*\>\s*/g, '>')
-        .replace(/\s*\+\s*/g, '+')
-        .replace(/\s*\!\s*/g, '!');
+
+// https://codepen.io/arlinadesign/pen/KVNBKK
+function minifyCss(n: string): string {
+    const saChecked = false;
+    const scChecked = false;
+    const biChecked = false;
+    const cmChecked = false;
+
+    var c = /@(media|-w|-m|-o|keyframes|page)(.*?)\{([\s\S]+?)?\}\}/gi,
+        t = n.length;
+    (n =
+        saChecked || scChecked
+            ? n.replace(/\/\*[\w\W]*?\*\//gm, '')
+            : n.replace(/(\n+)?(\/\*[\w\W]*?\*\/)(\n+)?/gm, '\n$2\n')),
+        (n = n.replace(
+            /([\n\r\t\s ]+)?([\,\:\;\{\}]+?)([\n\r\t\s ]+)?/g,
+            '$2'
+        )),
+        (n = scChecked ? n : n.replace(/\}(?!\})/g, '}\n')),
+        (n = biChecked
+            ? n.replace(c, function(e) {
+                  return e.replace(/\n+/g, '\n  ');
+              })
+            : n.replace(c, function(e) {
+                  return e.replace(/\n+/g, '');
+              })),
+        (n = biChecked && !scChecked ? n.replace(/\}\}/g, '}\n}') : n),
+        (n =
+            biChecked && !scChecked
+                ? n.replace(/@(media|-w|-m|-o|keyframes)(.*?)\{/g, '@$1$2{\n  ')
+                : n),
+        (n = cmChecked
+            ? n.replace(/;\}/g, '}')
+            : n
+                  .replace(/\}/g, ';}')
+                  .replace(/;+\}/g, ';}')
+                  .replace(/\};\}/g, '}}')),
+        (n = n.replace(/\:0(px|em|pt)/gi, ':0')),
+        (n = n.replace(/ 0(px|em|pt)/gi, ' 0')),
+        (n = n.replace(/\s+\!important/gi, '!important')),
+        (n = n.replace(/(^\n+|\n+$)/, '')),
+        (n = n.replace(/\t/g, '')),
+        (n = n.replace(/\n/g, ''));
+    return n;
 }
 
 function minifyXML(source: string): string {
