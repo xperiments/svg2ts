@@ -96,7 +96,7 @@ function getTypescriptOutputMetadata(
     const { path, name } = fileObj;
     let { svg } = fileObj;
     if (contextInterface) {
-        file = removeDefaultsFromVars(file);
+        svg = removeDefaultsFromVars(svg);
     }
     svg = svg.replace(/'/g, "\\'");
     return {
