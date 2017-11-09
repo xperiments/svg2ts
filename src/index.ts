@@ -41,7 +41,7 @@ function main() {
         return cmd.help();
     } else {
         cmd.args.blueprint = cmd.args.blueprint || 'typescript';
-        cmd.args.module = cmd.args.module || 'Svg2ts';
+        cmd.args.module = cmd.args.module || 'svg-to-ts';
         svg2ts(cmd.args);
     }
 }
