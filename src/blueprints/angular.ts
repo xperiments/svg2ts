@@ -39,7 +39,7 @@ export function saveFile(options: Svg2TsCmd, blueprint: string) {
         delete svgFile.path;
         svgFile.file = minifySvg(svgFile.file);
 
-        fs.writeFileSync(filePath, renderTS(svgFile));
+        fs.writeFileSync(filePath, renderTS(svgFile, options));
 
         if (svgFile.contextDefaults) {
             const ngFilePath = `${output}${separator}${module}${separator}components${separator}${svgFile.name}.component.ts`;
@@ -68,11 +68,13 @@ export function generateIndexFile(
             return `export { ${svgObjectName}${context} } from './${file.name}';`;
         })
         .join('\n').concat(`
-            export function getNgSvgTemplate(svg:any, context:string = 'context' ) {
-              return ${tpls}<svg [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">\${svg.file}</svg>${tpls}.replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g,${tpls} [attr.$1]="\${context}.$2"${tpls});
+            export function getNgSvgTemplate(svg: any, context: string = 'context') {
+              return \`<svg [attr.class]="'${options.module}-'+context.uuid" [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">\${svg.file}</svg>\`
+                .replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g, \` [attr.$1]="\${context}.$2"\`)
+                .replace(/{{(.+?)}}/g, '{{context.$1}}')
             }
-            export function getSVGViewbox(viewBox:any):string {
-              return [viewBox.minx,viewBox.miny,viewBox.width,viewBox.height].join(' ');
+            export function getSVGViewbox(viewBox: any): string {
+              return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
             }
         `);
     fs.writeFileSync(
@@ -103,10 +105,10 @@ export function generateIndexFile(
     fs.writeFileSync(
         `${options.output}${separator}${options.module}${separator}${toKebabCase(
             options.module
-        )}.ts`,
+        )}.module.ts`,
         angularDynamicModuleTemplate({
             components: namedComponents,
-            moduleName: options.module
+            moduleName: capitalize(toCamelCase(options.module))
         })
     );
 }
