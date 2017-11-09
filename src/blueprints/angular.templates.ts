@@ -8,7 +8,7 @@ export interface AngularDynamicClassTemplate {
 export const angularDynamicClassTemplate = tsc<
     AngularDynamicClassTemplate
 >(
-    `import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+    `import { Component, Input, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { @{className}, @{className}Context, getNgSvgTemplate, getSVGViewbox } from '../assets';
 
 @Component({
@@ -16,8 +16,9 @@ import { @{className}, @{className}Context, getNgSvgTemplate, getSVGViewbox } fr
   template: getNgSvgTemplate(@{className}),
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class @{className}Component {
-  private _context:@{className}Context;
+export class @{className}Component implements OnInit{
+  static UUID = 0;
+  private _context:@{className}Context = @{className}.contextDefaults;
   @Input() width:number = @{className}.width;
   @Input() height:number = @{className}.height;
   @Input() viewBox:string = getSVGViewbox(@{className}.viewBox);
@@ -28,6 +29,12 @@ export class @{className}Component {
       this._context ? this._context : @{className}.contextDefaults,
       ctx
     );
+  }
+  get context() {
+      return this._context;
+  }
+  ngOnInit() {
+    this.context.uuid = @{className}Component.UUID++;
   }
 }
 `,
