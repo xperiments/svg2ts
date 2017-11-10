@@ -1,19 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { SVG2TSOutputFile } from '../types';
-import {
-    capitalize,
-    toCamelCase,
-    minifySvg,
-    mkdirSyncRecursive,
-    toKebabCase
-} from '../utils';
+
+import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
 import {
     angularDynamicClassTemplate,
     angularDynamicModuleTemplate
 } from './angular.templates';
+import { capitalize, toCamelCase, toKebabCase } from '../utils/strings';
+
+import { compactSVG } from '../utils/svg';
+import { mkdirRecursiveSync } from '../utils/core';
 import { render as renderTS } from './typescript';
-import { Svg2TsCmd } from '../index';
 
 const separator = path.sep;
 
@@ -27,17 +24,18 @@ function render(svgFile: SVG2TSOutputFile): string {
         selector: 'svg-x--' + toKebabCase(svgFile.name)
     });
 }
-export function saveFile(options: Svg2TsCmd, blueprint: string) {
+
+export function saveFile(options: SVG2TSCmd, blueprint: string) {
     const { output, module } = options;
     return (svgFile: SVG2TSOutputFile) => {
         // TS
         const filePath = `${output}${separator}${module}${separator}assets${separator}${svgFile.name}.ts`;
         const destBase = path.dirname(filePath);
         if (!fs.existsSync(destBase)) {
-            mkdirSyncRecursive(destBase);
+            mkdirRecursiveSync(destBase);
         }
         delete svgFile.path;
-        svgFile.svg = minifySvg(svgFile.svg);
+        svgFile.svg = compactSVG(svgFile.svg);
 
         fs.writeFileSync(filePath, renderTS(svgFile, options));
 
@@ -45,7 +43,7 @@ export function saveFile(options: Svg2TsCmd, blueprint: string) {
             const ngFilePath = `${output}${separator}${module}${separator}components${separator}${svgFile.name}.component.ts`;
             const destBase = path.dirname(ngFilePath);
             if (!fs.existsSync(destBase)) {
-                mkdirSyncRecursive(destBase);
+                mkdirRecursiveSync(destBase);
             }
             fs.writeFileSync(ngFilePath, render(svgFile));
         }
@@ -53,12 +51,12 @@ export function saveFile(options: Svg2TsCmd, blueprint: string) {
 }
 
 export function generateIndexFile(
-    options: Svg2TsCmd,
+    options: SVG2TSCmd,
     files: SVG2TSOutputFile[]
 ) {
     const tpls = '`';
 
-    // generate an index.ts og svg's
+    // generate an index.ts of svg's
     const indexFile = files
         .map((file: SVG2TSOutputFile) => {
             const svgObjectName = capitalize(toCamelCase(file.name));
@@ -69,14 +67,16 @@ export function generateIndexFile(
         })
         .join('\n').concat(`
             export function getNgSvgTemplate(svg: any, context: string = 'context') {
-              return \`<svg [attr.class]="'${options.module}-'+context.uuid" [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">\${svg.svg}</svg>\`
+              return \`<svg [attr.class]="'${options.module}-'+context.uuid" [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">@@@styles@@@\${svg.svg}</svg>\`
                 .replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g, \` [attr.$1]="\${context}.$2"\`)
                 .replace(/{{(.+?)}}/g, '{{context.$1}}')
+                .replace('@@@styles@@@', \`<style>\${svg.css}</style>\`);
             }
             export function getSVGViewbox(viewBox: any): string {
               return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
             }
         `);
+
     fs.writeFileSync(
         `${options.output}${separator}${options.module}${separator}assets${separator}index.ts`,
         indexFile
@@ -101,7 +101,7 @@ export function generateIndexFile(
         componentsIndex
     );
 
-    // generate the module file
+    // generate the module.ts file
     fs.writeFileSync(
         `${options.output}${separator}${options.module}${separator}${toKebabCase(
             options.module

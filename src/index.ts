@@ -1,15 +1,10 @@
 #!/usr/bin/env node
-import { CommandLineTools } from './cmd';
 import { svg2ts } from './svg2ts';
-import { banner } from './banner';
-const packageJson = require('../package.json');
+import { banner } from './utils/banner';
+import { CommandLineTools } from './utils/cmd';
+import { SVG2TSCmd } from './types';
 
-export interface Svg2TsCmd {
-    output: string;
-    input: string;
-    blueprint: string;
-    module: string;
-}
+const packageJson = require('../package.json');
 
 function main() {
     const args = process.argv.slice(2);
@@ -26,13 +21,13 @@ function main() {
             output: 'ts output dir|./svg-ts-out',
             blueprint:
                 "blueprint to use 'typescript'[default] 'angular' |typescript",
-            module: 'Module name for angular blueprint |Svg2ts'
+            module: 'Module name for angular blueprint |svg-to-ts'
         },
         // prettier-ignore
         banner: banner,
         version: packageJson.version
     };
-    const cmd = new CommandLineTools<Svg2TsCmd>(
+    const cmd = new CommandLineTools<SVG2TSCmd>(
         'svg2ts',
         args,
         commandLineToolsOptions

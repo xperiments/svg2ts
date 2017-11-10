@@ -1,10 +1,10 @@
-import { tsc } from '../utils';
-import { SVG2TSOutputFile } from '../types';
+import { tsc } from '../utils/core';
 
 export interface AngularDynamicClassTemplate {
     className: string;
     selector: string;
 }
+
 export const angularDynamicClassTemplate = tsc<
     AngularDynamicClassTemplate
 >(
@@ -45,6 +45,7 @@ export interface AngularDynamicModuleTemplate {
     moduleName: string;
     components: string[];
 }
+
 export const angularDynamicModuleTemplate = tsc<
     AngularDynamicModuleTemplate
 >(

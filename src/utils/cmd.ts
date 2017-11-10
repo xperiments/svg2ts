@@ -1,25 +1,12 @@
 import * as path from 'path';
 
 export type Dictionary = { [key: string]: any };
+
 export interface CommandLineToolsOptions {
     aliases: Dictionary;
     help: Dictionary;
     banner: string[];
     version: string;
-}
-
-function padEnd(str: string, targetLength: number, padString: string) {
-    targetLength = targetLength >> 0; //floor if number or convert non-number to 0;
-    padString = String(padString || ' ');
-    if (str.length > targetLength) {
-        return String(str);
-    } else {
-        targetLength = targetLength - str.length;
-        if (targetLength > padString.length) {
-            padString += padString.repeat(targetLength / padString.length); //append to original to ensure we are longer than needed
-        }
-        return String(str) + padString.slice(0, targetLength);
-    }
 }
 
 export class CommandLineTools<TypedArgs> {
@@ -106,5 +93,19 @@ export class CommandLineTools<TypedArgs> {
             },
             {} as Dictionary
         );
+    }
+}
+
+function padEnd(str: string, targetLength: number, padString: string) {
+    targetLength = targetLength >> 0; //floor if number or convert non-number to 0;
+    padString = String(padString || ' ');
+    if (str.length > targetLength) {
+        return String(str);
+    } else {
+        targetLength = targetLength - str.length;
+        if (targetLength > padString.length) {
+            padString += padString.repeat(targetLength / padString.length); //append to original to ensure we are longer than needed
+        }
+        return String(str) + padString.slice(0, targetLength);
     }
 }

@@ -1,43 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as postcss from 'postcss';
-import * as prefixer from 'postcss-prefix-selector';
-import { SVG2TSOutputFile } from '../types';
-import {
-    printObj,
-    capitalize,
-    toCamelCase,
-    minifySvg,
-    mkdirSyncRecursive,
-    toKebabCase
-} from '../utils';
-import { Svg2TsCmd } from '../index';
 
-export function render(svgFile: SVG2TSOutputFile, options: Svg2TsCmd) {
-    const contextInterface =
-        svgFile.contextInterface &&
-        svgFile.contextInterface.toString().replace(/:/g, '?:');
+import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
+import { capitalize, toCamelCase } from '../utils/strings';
+import { compactSVG, generateTSInterface } from '../utils/svg';
+import { mkdirRecursiveSync, printObj } from '../utils/core';
+
+export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
+    const contextInterface = generateTSInterface(svgFile.contextInterface);
+
     if (contextInterface) {
         delete svgFile.contextInterface;
     }
-
-    svgFile.svg = svgFile.svg
-        .replace(
-            /(<style(.+?)?>)([\s\S]+?)(<\/style>)/g,
-            (match, $1, $2, $3, $4) => {
-                const namespacedCss = postcss()
-                    .use(
-                        prefixer({
-                            prefix: `.${toKebabCase(options.module)}-{{uuid}}`
-                        })
-                    )
-                    .process($3.replace(/{{/g, '_oo_').replace(/}}/g, '_OO_'))
-                    .css;
-                return `${$1}${namespacedCss}${$4}`;
-            }
-        )
-        .replace(/_oo_/g, '{{')
-        .replace(/_OO_/g, '}}');
 
     // prettier-ignore
     const interfaceOutput =
@@ -47,22 +21,23 @@ export function render(svgFile: SVG2TSOutputFile, options: Svg2TsCmd) {
     // prettier-ignore
     return `${interfaceOutput}export const ${capitalize(toCamelCase(svgFile.name))} = ${printObj(svgFile)};`;
 }
-export function saveFile(options: Svg2TsCmd, blueprint: string) {
+
+export function saveFile(options: SVG2TSCmd, blueprint: string) {
     const { output } = options;
     return (svgFile: SVG2TSOutputFile) => {
         const filePath = output + path.sep + svgFile.name + '.ts';
         const destBase = path.dirname(filePath);
         if (!fs.existsSync(destBase)) {
-            mkdirSyncRecursive(destBase);
+            mkdirRecursiveSync(destBase);
         }
         delete svgFile.path;
-        svgFile.svg = minifySvg(svgFile.svg);
-
+        svgFile.svg = compactSVG(svgFile.svg);
         fs.writeFileSync(filePath, render(svgFile, options));
     };
 }
+
 export function generateIndexFile(
-    options: Svg2TsCmd,
+    options: SVG2TSCmd,
     files: SVG2TSOutputFile[]
 ) {
     const indexFile = files
@@ -74,6 +49,6 @@ export function generateIndexFile(
             return `export { ${svgObjectName}${context} } from './${file.name}';`;
         })
         .join('\n');
-    mkdirSyncRecursive(options.output + path.sep);
+    mkdirRecursiveSync(options.output + path.sep);
     fs.writeFileSync(options.output + path.sep + 'index.ts', indexFile);
 }

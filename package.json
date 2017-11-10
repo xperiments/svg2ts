@@ -7,7 +7,9 @@
         "svg2ts": "./lib/index.js"
     },
     "scripts": {
-        "build": "tsc"
+        "build": "tsc",
+        "test":
+            "node ./lib/index.js -b typescript -i ./tests/svg-sources -o ./tests/ts-output"
     },
     "repository": {
         "type": "git",
@@ -22,8 +24,11 @@
     "homepage": "https://github.com/xperiments/svg2ts#readme",
     "devDependencies": {
         "@types/node": "^8.0.47",
-        "@types/progress": "^2.0.0",
         "typescript": "^2.6.1"
     },
-    "types": "lib/index"
+    "types": "lib/index",
+    "dependencies": {
+        "postcss": "^6.0.14",
+        "postcss-prefix-selector": "^1.6.0"
+    }
 }
