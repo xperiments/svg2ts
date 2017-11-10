@@ -6,18 +6,20 @@ import {
     angularDynamicClassTemplate,
     angularDynamicModuleTemplate
 } from './angular.templates';
-import { capitalize, toCamelCase, toKebabCase } from '../utils/strings';
+import {
+    capitalize,
+    toCamelCase,
+    toKebabCase,
+    toPascalCase
+} from '../utils/strings';
 import { compactSVG } from '../utils/svg';
 import { mkdirRecursiveSync } from '../utils/core';
 import { render as renderTS } from './typescript';
 
 function render(svgFile: SVG2TSOutputFile): string {
-    const contextInterface = svgFile.contextInterface;
-    if (contextInterface) {
-        delete svgFile.contextInterface;
-    }
+    delete svgFile.contextInterface;
     return angularDynamicClassTemplate({
-        className: capitalize(toCamelCase(svgFile.name)),
+        className: toPascalCase(svgFile.name),
         selector: 'svg-x--' + toKebabCase(svgFile.name)
     });
 }
