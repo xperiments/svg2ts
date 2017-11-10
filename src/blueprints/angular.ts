@@ -8,9 +8,9 @@ import {
 } from './angular.templates';
 import {
     capitalize,
-    toCamelCase,
-    toKebabCase,
-    toPascalCase
+    camelCase,
+    kebabCase,
+    pascalCase
 } from '../utils/strings';
 import { compactSVG } from '../utils/svg';
 import { mkdirRecursiveSync } from '../utils/core';
@@ -19,8 +19,8 @@ import { render as renderTS } from './typescript';
 function render(svgFile: SVG2TSOutputFile): string {
     delete svgFile.contextInterface;
     return angularDynamicClassTemplate({
-        className: toPascalCase(svgFile.name),
-        selector: 'svg-x--' + toKebabCase(svgFile.name)
+        className: pascalCase(svgFile.name),
+        selector: 'svg-x--' + kebabCase(svgFile.name)
     });
 }
 
@@ -56,7 +56,7 @@ export function generateIndexFile(
     // generate an index.ts of svg's
     const indexFile = files
         .map((file: SVG2TSOutputFile) => {
-            const svgObjectName = capitalize(toCamelCase(file.name));
+            const svgObjectName = capitalize(camelCase(file.name));
             const context = file.contextDefaults
                 ? `, ${svgObjectName}Context`
                 : '';
@@ -82,12 +82,12 @@ export function generateIndexFile(
     const components = files.filter(file => file.contextDefaults);
 
     const namedComponents = components.map(_ =>
-        capitalize(toCamelCase(_.name))
+        capitalize(camelCase(_.name))
     );
     const componentsIndex = components
         .map(component => {
             return `export { ${capitalize(
-                toCamelCase(component.name)
+                camelCase(component.name)
             )}Component } from './${component.name}.component';`;
         })
         .join('\n');
@@ -100,12 +100,12 @@ export function generateIndexFile(
 
     // generate the module.ts file
     fs.writeFileSync(
-        `${options.output}${path.sep}${options.module}${path.sep}${toKebabCase(
+        `${options.output}${path.sep}${options.module}${path.sep}${kebabCase(
             options.module
         )}.module.ts`,
         angularDynamicModuleTemplate({
             components: namedComponents,
-            moduleName: capitalize(toCamelCase(options.module))
+            moduleName: capitalize(camelCase(options.module))
         })
     );
 }

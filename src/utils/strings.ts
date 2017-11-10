@@ -1,4 +1,4 @@
-export function toCamelCase(str: string) {
+export function camelCase(str: string) {
     return str
         .replace(/[\s|_|-](.)/g, function($1) {
             return $1.toUpperCase();
@@ -9,7 +9,7 @@ export function toCamelCase(str: string) {
         });
 }
 
-export function toKebabCase(str: string) {
+export function kebabCase(str: string) {
     return str
         .replace(/([a-z])([A-Z])/g, '$1-$2')
         .replace(/([^a-zA-Z])/g, '-')
@@ -20,6 +20,6 @@ export function capitalize(str: string) {
     return str[0].toUpperCase() + str.slice(1);
 }
 
-export function toPascalCase(str: string) {
-    return capitalize(toCamelCase(str));
+export function pascalCase(str: string) {
+    return capitalize(camelCase(str));
 }

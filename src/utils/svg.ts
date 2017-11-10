@@ -26,7 +26,7 @@ import {
     svgWidthRegExp
 } from './regexp';
 
-import { toKebabCase } from './strings';
+import { kebabCase } from './strings';
 
 export function isSVG(buffer: string) {
     return svgIsSVG.test(buffer);
@@ -161,7 +161,7 @@ export function extractStyles(svg: string, options: SVG2TSCmd): string {
     return postcss()
         .use(
             prefixer({
-                prefix: `.${toKebabCase(options.module)}-_oo_0|uuid_OO_`
+                prefix: `.${kebabCase(options.module)}-_oo_0|uuid_OO_`
             })
         )
         .process(cssmin)
