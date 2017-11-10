@@ -7,12 +7,9 @@ import {
     angularDynamicModuleTemplate
 } from './angular.templates';
 import { capitalize, toCamelCase, toKebabCase } from '../utils/strings';
-
 import { compactSVG } from '../utils/svg';
 import { mkdirRecursiveSync } from '../utils/core';
 import { render as renderTS } from './typescript';
-
-const separator = path.sep;
 
 function render(svgFile: SVG2TSOutputFile): string {
     const contextInterface = svgFile.contextInterface;
@@ -29,7 +26,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
     const { output, module } = options;
     return (svgFile: SVG2TSOutputFile) => {
         // TS
-        const filePath = `${output}${separator}${module}${separator}assets${separator}${svgFile.name}.ts`;
+        const filePath = `${output}${path.sep}${module}${path.sep}assets${path.sep}${svgFile.name}.ts`;
         const destBase = path.dirname(filePath);
         if (!fs.existsSync(destBase)) {
             mkdirRecursiveSync(destBase);
@@ -40,7 +37,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
         fs.writeFileSync(filePath, renderTS(svgFile, options));
 
         if (svgFile.contextDefaults) {
-            const ngFilePath = `${output}${separator}${module}${separator}components${separator}${svgFile.name}.component.ts`;
+            const ngFilePath = `${output}${path.sep}${module}${path.sep}components${path.sep}${svgFile.name}.component.ts`;
             const destBase = path.dirname(ngFilePath);
             if (!fs.existsSync(destBase)) {
                 mkdirRecursiveSync(destBase);
@@ -76,7 +73,7 @@ export function generateIndexFile(
         `);
 
     fs.writeFileSync(
-        `${options.output}${separator}${options.module}${separator}assets${separator}index.ts`,
+        `${options.output}${path.sep}${options.module}${path.sep}assets${path.sep}index.ts`,
         indexFile
     );
 
@@ -95,13 +92,13 @@ export function generateIndexFile(
 
     // generate an index.ts of components
     fs.writeFileSync(
-        `${options.output}${separator}${options.module}${separator}components${separator}index.ts`,
+        `${options.output}${path.sep}${options.module}${path.sep}components${path.sep}index.ts`,
         componentsIndex
     );
 
     // generate the module.ts file
     fs.writeFileSync(
-        `${options.output}${separator}${options.module}${separator}${toKebabCase(
+        `${options.output}${path.sep}${options.module}${path.sep}${toKebabCase(
             options.module
         )}.module.ts`,
         angularDynamicModuleTemplate({
