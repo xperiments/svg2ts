@@ -8,7 +8,7 @@ import {
     filterSvg,
     filterSvgContent
 } from './utils/svg';
-import { getTypescriptOutputMetadata } from './utils/reflection';
+import { getSVG2TSOutputFile } from './utils/reflection';
 
 import { banner } from './utils/banner';
 
@@ -31,7 +31,7 @@ export function svg2ts(options: SVG2TSCmd) {
             .filter(filterSvgContent)
             .filter(filterKnownDimensions);
 
-        const tsMetadata = realSvgFiles.map(getTypescriptOutputMetadata);
+        const tsMetadata = realSvgFiles.map(getSVG2TSOutputFile);
 
         tsMetadata.forEach(saveFile(options, blueprint));
 
