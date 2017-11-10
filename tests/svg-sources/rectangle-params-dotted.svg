@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="101" height="101" viewBox="0 0 100 100">
+<style>
+	.classTest {
+		fill:{{#F00|fill}};
+		content:'{{pepe|content.caption}}';
+	}
+</style>
+    <rect x="{{0|x}}" y="{{0|y}}" width="{{100|rectangle.width}}" height="{{100|rectangle.height}}" fill="{{#0FF|rectangle.fill.color.hex}}"/>
+</svg>
