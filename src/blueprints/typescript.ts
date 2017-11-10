@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
-import { capitalize, toCamelCase } from '../utils/strings';
+import { capitalize, toCamelCase, toPascalCase } from '../utils/strings';
 import { compactSVG, generateTSInterface } from '../utils/svg';
 import { mkdirRecursiveSync, printObj } from '../utils/core';
 
@@ -16,10 +16,10 @@ export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     // prettier-ignore
     const interfaceOutput =
         contextInterface
-        ? `export interface ${capitalize(toCamelCase(svgFile.name))}Context ${contextInterface};`
+        ? `export interface ${toPascalCase(svgFile.name)}Context ${contextInterface};`
         : '';
     // prettier-ignore
-    return `${interfaceOutput}export const ${capitalize(toCamelCase(svgFile.name))} = ${printObj(svgFile)};`;
+    return `${interfaceOutput}export const ${toPascalCase(svgFile.name)} = ${printObj(svgFile)};`;
 }
 
 export function saveFile(options: SVG2TSCmd, blueprint: string) {
