@@ -2,10 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SVG2TSSourceFile, SVG2TSCmd } from '../types';
 import { removeStyles, extractStyles } from './svg';
+import { lineBreaksRegExp } from './regexp';
 
 export function loadSvgFile(options: SVG2TSCmd) {
     return (fileName: string): SVG2TSSourceFile => {
-        const svg = fs.readFileSync(fileName, 'utf8').replace(/\r?\n|\r/g, '');
+        const svg = fs
+            .readFileSync(fileName, 'utf8')
+            .replace(lineBreaksRegExp, '');
 
         return {
             path: fileName,

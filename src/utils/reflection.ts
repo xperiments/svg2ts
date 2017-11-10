@@ -1,34 +1,29 @@
 import { dotObject } from './core';
 import { SVG2TSContext, SVG2TSSourceFile, SVG2TSOutputFile } from '../types';
 import { getMetadata, removeDefaultTemplateValues } from './svg';
+import {
+    propertyValueKeyRegExp,
+    doubleQuoteRegExp,
+    singleQuoteRegExp
+} from './regexp';
 
 export function getContextDefinition(content: string) {
-    const reg = /\{{(.+?)\|(.+?)}}/g;
-    const hasDynamicData = content.match(reg);
-
-    if (hasDynamicData) {
-        const matches = <RegExpMatchArray>content.match(reg);
-        const result = matches.reduce(contextDefinitionReducer, {
-            uuid: 'number'
-        });
-        return result;
-    } else {
-        return {};
-    }
+    const hasDynamicData = content.match(propertyValueKeyRegExp);
+    return hasDynamicData
+        ? hasDynamicData.reduce(contextDefinitionReducer, {
+              uuid: 'number'
+          })
+        : {};
 }
 
 export function getContextDefaults(file: string): SVG2TSContext | undefined {
-    const reg = /\{{(.+?)\|(.+?)}}/g;
-    const hasDynamicData = file.match(reg);
-    const matches = <RegExpMatchArray>file.match(reg);
-    if (hasDynamicData) {
-        return matches.reduce(contextDefaultsReducer, {});
-    } else {
-        return {};
-    }
+    const hasDynamicData = file.match(propertyValueKeyRegExp);
+    return hasDynamicData
+        ? hasDynamicData.reduce(contextDefaultsReducer, {})
+        : {};
 }
 
-export function getTypescriptOutputMetadata(
+export function getSVG2TSOutputFile(
     fileObj: SVG2TSSourceFile
 ): SVG2TSOutputFile {
     const { width, height, viewBox } = getMetadata(fileObj);
@@ -39,18 +34,18 @@ export function getTypescriptOutputMetadata(
     const interfaceDef = JSON.stringify(
         Object.assign({}, contextInterface, contextInterfaceCss)
     )
-        .replace(/"/g, '')
-        .replace(/,/g, ';');
+        .replace(doubleQuoteRegExp, '')
+        .replace(singleQuoteRegExp, ';');
+
     const defaultsDef = Object.assign({}, contextDefaults, contextDefaultsCss);
 
     const { path, name } = fileObj;
     let { svg, css } = fileObj;
 
-    svg = removeDefaultTemplateValues(svg).replace(/'/g, "\\'");
+    svg = removeDefaultTemplateValues(svg).replace(singleQuoteRegExp, "\\'");
 
     css && (css = removeDefaultTemplateValues(css));
 
-    console.log(interfaceDef === '{}', defaultsDef);
     return {
         ...width ? { width: width } : {},
         ...height ? { height: height } : {},
@@ -69,10 +64,9 @@ export function getTypescriptOutputMetadata(
 }
 
 function contextDefaultsReducer(acc: any, match: string) {
-    const reg = /\{{(.+?)\|(.+?)}}/g;
-    const value = match.replace(reg, '$1');
+    const value = match.replace(propertyValueKeyRegExp, '$1');
     dotObject(
-        `dot.${match.replace(reg, '$2')}`,
+        `dot.${match.replace(propertyValueKeyRegExp, '$2')}`,
         acc,
         isNaN((<any>value) as number) ? value : parseInt(value, 10)
     );
@@ -80,10 +74,9 @@ function contextDefaultsReducer(acc: any, match: string) {
 }
 
 function contextDefinitionReducer(acc: any, match: string) {
-    const reg = /\{{(.+?)\|(.+?)}}/g;
-    const value = match.replace(reg, '$1');
+    const value = match.replace(propertyValueKeyRegExp, '$1');
     dotObject(
-        `dot.${match.replace(reg, '$2')}`,
+        `dot.${match.replace(propertyValueKeyRegExp, '$2')}`,
         acc,
         isNaN((<any>value) as number) ? 'string' : 'number'
     );

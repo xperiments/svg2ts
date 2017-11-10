@@ -5,21 +5,31 @@ import * as prefixer from 'postcss-prefix-selector';
 import {
     SVG2TSCmd,
     SVG2TSDimensions,
-    SVG2TSSourceFile,
-    SVG2TSSVGMetadata
+    SVG2TSSVGMetadata,
+    SVG2TSSourceFile
 } from '../types';
+import {
+    colonRegExp,
+    propertyBeginRegExp,
+    propertyBeginToggleRegExp,
+    propertyEndRegExp,
+    propertyEndToggleRegExp,
+    propertyValueKeyRegExp,
+    singleQuoteRegExp,
+    svgAttributeRegExp,
+    svgHeightRegExp,
+    svgIsSVG,
+    svgRootRegExp,
+    svgScriptRegExp,
+    svgStyleRegExp,
+    svgViewBoxRegExp,
+    svgWidthRegExp
+} from './regexp';
 
 import { toKebabCase } from './strings';
 
-const extractorRegExps = {
-    root: /<svg\s[^>]+>/,
-    width: /\bwidth ?= ?(['"])([^%]+?)\1/,
-    height: /\bheight ?= ?(['"])([^%]+?)\1/,
-    viewBox: /\bviewBox ?= ?(['"])(.+?)\1/
-};
-
 export function isSVG(buffer: string) {
-    return /<svg[^>]+[^>]*>/.test(buffer);
+    return svgIsSVG.test(buffer);
 }
 
 export function parseViewbox(viewBox: string): SVG2TSDimensions {
@@ -30,9 +40,9 @@ export function parseViewbox(viewBox: string): SVG2TSDimensions {
 }
 
 export function parseAttributes(root: any): SVG2TSSVGMetadata {
-    const width = root.match(extractorRegExps.width);
-    const height = root.match(extractorRegExps.height);
-    const viewBox = root.match(extractorRegExps.viewBox);
+    const width = root.match(svgWidthRegExp);
+    const height = root.match(svgHeightRegExp);
+    const viewBox = root.match(svgViewBoxRegExp);
     return {
         ...width ? { width: parseInt(width[2], 10) } : {},
         ...height ? { height: parseInt(height[2], 10) } : {},
@@ -42,7 +52,7 @@ export function parseAttributes(root: any): SVG2TSSVGMetadata {
 
 export function getMetadata(svgFile: SVG2TSSourceFile) {
     const buffer = svgFile.svg;
-    const root = buffer.match(extractorRegExps.root);
+    const root = buffer.match(svgRootRegExp);
     if (root) {
         const attrs = parseAttributes(root[0]);
         if (attrs.width && attrs.height) {
@@ -136,17 +146,17 @@ export function compactSVG(source: string): string {
 }
 
 export function removeDefaultTemplateValues(source: string): string {
-    return source.replace(/\{{(.+?)\|(.+?)}}/g, '{{$2}}');
+    return source.replace(propertyValueKeyRegExp, '{{$2}}');
 }
 
 export function extractStyles(svg: string, options: SVG2TSCmd): string {
     const cssmin = compactCSS(
         getInlineStyles(svg)
-            .replace(/'/g, "\\'")
-            .replace(/ (\S+?)=['"]{{(.+?)}}['"]/g, ` [attr.$1]="context.$2"`)
+            .replace(singleQuoteRegExp, "\\'")
+            .replace(svgAttributeRegExp, ` [attr.$1]="context.$2"`)
     )
-        .replace(/{{/g, '_oo_')
-        .replace(/}}/g, '_OO_');
+        .replace(propertyBeginRegExp, '_oo_')
+        .replace(propertyEndRegExp, '_OO_');
 
     return postcss()
         .use(
@@ -155,21 +165,20 @@ export function extractStyles(svg: string, options: SVG2TSCmd): string {
             })
         )
         .process(cssmin)
-        .css.replace(/_oo_/g, '{{')
-        .replace(/_OO_/g, '}}');
+        .css.replace(propertyBeginToggleRegExp, '{{')
+        .replace(propertyEndToggleRegExp, '}}');
 }
 
 export function removeStyles(svg: string): string {
-    return svg.replace(/(<style(([^>][\s\S])+?)?>)([\s\S]+?)(<\/style>)/g, '');
+    return svg.replace(svgStyleRegExp, '');
 }
+
 export function removeScripts(svg: string): string {
-    return svg.replace(
-        /(<script(([^>][\s\S])+?)?>)([\s\S]+?)(<\/script>)/g,
-        ''
-    );
+    return svg.replace(svgScriptRegExp, '');
 }
+
 export function generateTSInterface(obj: any) {
-    return obj && obj.toString().replace(/:/g, '?:');
+    return obj && obj.toString().replace(colonRegExp, '?:');
 }
 
 export function filterSvg(file: string) {
