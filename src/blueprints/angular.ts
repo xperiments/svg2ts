@@ -54,8 +54,6 @@ export function generateIndexFile(
     options: SVG2TSCmd,
     files: SVG2TSOutputFile[]
 ) {
-    const tpls = '`';
-
     // generate an index.ts of svg's
     const indexFile = files
         .map((file: SVG2TSOutputFile) => {
@@ -70,7 +68,7 @@ export function generateIndexFile(
               return \`<svg [attr.class]="'${options.module}-'+context.uuid" [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">@@@styles@@@\${svg.svg}</svg>\`
                 .replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g, \` [attr.$1]="\${context}.$2"\`)
                 .replace(/{{(.+?)}}/g, '{{context.$1}}')
-                .replace('@@@styles@@@', \`<style>\${svg.css}</style>\`);
+                .replace('@@@styles@@@', \`<style>\${svg.css.replace(/{{(.+?)}}/g, '{{context.$1}}')}</style>\`);
             }
             export function getSVGViewbox(viewBox: any): string {
               return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
