@@ -23,15 +23,11 @@ export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
 }
 
 export function saveFile(options: SVG2TSCmd, blueprint: string) {
-    const { output } = options;
     return (svgFile: SVG2TSOutputFile) => {
-        const filePath = output + path.sep + svgFile.name + '.ts';
-        const destBase = path.dirname(filePath);
-        if (!fs.existsSync(destBase)) {
-            mkdirRecursiveSync(destBase);
-        }
+        const filePath = options.output + path.sep + svgFile.name + '.ts';
         delete svgFile.path;
         svgFile.svg = compactSVG(svgFile.svg);
+        mkdirRecursiveSync(path.dirname(filePath));
         fs.writeFileSync(filePath, render(svgFile, options));
     };
 }
@@ -40,9 +36,10 @@ export function generateIndexFile(
     options: SVG2TSCmd,
     files: SVG2TSOutputFile[]
 ) {
-    const indexFile = files
+    const filePath = options.output + path.sep + 'index.ts';
+    const indexFileContents = files
         .map((file: SVG2TSOutputFile) => {
-            const svgObjectName = capitalize(toCamelCase(file.name));
+            const svgObjectName = toPascalCase(file.name);
             const context = file.contextDefaults
                 ? `, ${svgObjectName}Context`
                 : '';
@@ -50,5 +47,5 @@ export function generateIndexFile(
         })
         .join('\n');
     mkdirRecursiveSync(options.output + path.sep);
-    fs.writeFileSync(options.output + path.sep + 'index.ts', indexFile);
+    fs.writeFileSync(filePath, indexFileContents);
 }
