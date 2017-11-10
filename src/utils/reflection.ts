@@ -42,10 +42,6 @@ export function getSVG2TSOutputFile(
     const { path, name } = fileObj;
     let { svg, css } = fileObj;
 
-    svg = removeDefaultTemplateValues(svg).replace(singleQuoteRegExp, "\\'");
-
-    css && (css = removeDefaultTemplateValues(css));
-
     return {
         ...width ? { width: width } : {},
         ...height ? { height: height } : {},
@@ -54,8 +50,8 @@ export function getSVG2TSOutputFile(
             : {},
         path,
         name,
-        svg,
-        ...css ? { css: css } : {},
+        svg: removeDefaultTemplateValues(svg).replace(singleQuoteRegExp, "\\'"),
+        ...css ? { css: removeDefaultTemplateValues(css) } : {},
         ...interfaceDef !== '{}' ? { contextInterface: interfaceDef } : {},
         ...JSON.stringify(contextDefaults) !== '{}'
             ? { contextDefaults: defaultsDef }
