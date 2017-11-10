@@ -24,6 +24,8 @@ import {
     svgStyleRegExp,
     svgViewBoxRegExp,
     svgWidthRegExp
+    styleExtractRegExp
+    styleTagRegExp,,
 } from './regexp';
 
 import { kebabCase } from './strings';
@@ -103,8 +105,8 @@ export function getViewBoxDimensions(attrs: any): SVG2TSSVGMetadata {
 }
 
 export function getInlineStyles(svg: string): string {
-    const matches = svg.match(/(<style(.+?)?>)([\s\S]+?)<\/style>/g);
-    return matches ? matches.join('').replace(/<[\/]?style>/g, '') : '';
+    const matches = svg.match(styleExtractRegExp);
+    return matches ? matches.join('').replace(styleTagRegExp, '') : '';
 }
 
 export function compactCSS(css: string): string {

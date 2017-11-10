@@ -17,3 +17,6 @@ export const svgScriptRegExp = /(<script(([^>][\s\S])+?)?>)([\s\S]+?)(<\/script>
 export const svgStyleRegExp = /(<style(([^>][\s\S])+?)?>)([\s\S]+?)(<\/style>)/g;
 export const svgViewBoxRegExp = /\bviewBox ?= ?(['"])(.+?)\1/;
 export const svgWidthRegExp = /\bwidth ?= ?(['"])([^%]+?)\1/;
+
+export const styleTagRegExp = /<[\/]?style>/g;
+export const styleExtractRegExp = /(<style(.+?)?>)([\s\S]+?)<\/style>/g;
