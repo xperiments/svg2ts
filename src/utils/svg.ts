@@ -23,9 +23,9 @@ import {
     svgScriptRegExp,
     svgStyleRegExp,
     svgViewBoxRegExp,
-    svgWidthRegExp
-    styleExtractRegExp
-    styleTagRegExp,,
+    svgWidthRegExp,
+    styleExtractRegExp,
+    styleTagRegExp
 } from './regexp';
 
 import { kebabCase } from './strings';
