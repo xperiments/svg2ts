@@ -4,23 +4,19 @@ import * as path from 'path';
 import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
 import {
     angularDynamicClassTemplate,
-    angularDynamicModuleTemplate
+    angularDynamicModuleTemplate,
+    svgIconClassTemplate
 } from './angular.templates';
-import {
-    capitalize,
-    camelCase,
-    kebabCase,
-    pascalCase
-} from '../utils/strings';
+import { capitalize, camelCase, kebabCase, pascalCase } from '../utils/strings';
 import { compactSVG } from '../utils/svg';
 import { mkdirRecursiveSync } from '../utils/core';
 import { render as renderTS } from './typescript';
 
-function render(svgFile: SVG2TSOutputFile): string {
+function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
     delete svgFile.contextInterface;
     return angularDynamicClassTemplate({
         className: pascalCase(svgFile.name),
-        selector: 'svg-x--' + kebabCase(svgFile.name)
+        selector: `${kebabCase(options.module)}-${kebabCase(svgFile.name)}`
     });
 }
 
@@ -44,7 +40,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
             if (!fs.existsSync(destBase)) {
                 mkdirRecursiveSync(destBase);
             }
-            fs.writeFileSync(ngFilePath, render(svgFile));
+            fs.writeFileSync(ngFilePath, render(svgFile, options));
         }
     };
 }
@@ -56,7 +52,7 @@ export function generateIndexFile(
     // generate an index.ts of svg's
     const indexFile = files
         .map((file: SVG2TSOutputFile) => {
-            const svgObjectName = capitalize(camelCase(file.name));
+            const svgObjectName = pascalCase(file.name);
             const context = file.contextDefaults
                 ? `, ${svgObjectName}Context`
                 : '';
@@ -80,16 +76,20 @@ export function generateIndexFile(
     );
 
     const components = files.filter(file => file.contextDefaults);
+    const namedComponents = components.map(_ => pascalCase(_.name));
+    const moduleName = pascalCase(options.module);
 
-    const namedComponents = components.map(_ =>
-        capitalize(camelCase(_.name))
-    );
     const componentsIndex = components
         .map(component => {
-            return `export { ${capitalize(
-                camelCase(component.name)
+            return `export { ${pascalCase(
+                component.name
             )}Component } from './${component.name}.component';`;
         })
+        .concat(
+            `export {${pascalCase(
+                moduleName
+            )}Component} from './${options.module}.component'`
+        )
         .join('\n');
 
     // generate an index.ts of components
@@ -104,8 +104,25 @@ export function generateIndexFile(
             options.module
         )}.module.ts`,
         angularDynamicModuleTemplate({
-            components: namedComponents,
-            moduleName: capitalize(camelCase(options.module))
+            components: namedComponents.concat(pascalCase(moduleName)),
+            moduleName
+        })
+    );
+
+    fs.writeFileSync(
+        `${options.output}${path.sep}${options.module}${path.sep}components${path.sep}${kebabCase(
+            options.module
+        )}.component.ts`,
+        svgIconClassTemplate({
+            assets: files.map(file => pascalCase(file.name)),
+            components: components.map(component => ({
+                component: pascalCase(component.name),
+                name: component.name
+            })),
+            moduleName,
+            className: `${pascalCase(options.module)}`,
+            pascalCase: pascalCase,
+            selector: `${kebabCase(options.module)}-svg`
         })
     );
 }
