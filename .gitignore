@@ -10,4 +10,3 @@ node_modules/
 tests/ts-output
 lib
 package-lock.json
-svg2ts.gif
