@@ -11,3 +11,4 @@ src
 tests
 package-lock.json
 tsconfig.json
+svg2ts.gif
