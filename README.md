@@ -189,7 +189,7 @@ Somewhere in the main Angular component
 
 ```
 ...
-this.customParamsObject({ x:20, y:30, width:50, height:30, fill:'#FF0' })
+this.customParamsObject = { x:20, y:30, width:50, height:30, fill:'#FF0' };
 ...
 ```
 
