@@ -70,7 +70,7 @@ import  {
   @{
     components.map((component)=>{
       return \`@{component}Component\`;
-    }).join(',\n  ')
+  }).join(',\\n  ')
   }
 } from './components'
 
@@ -78,7 +78,7 @@ const comps = [
   @{
     components.map((component)=>{
         return \`@{component}Component\`;
-    }).join(',\n  ')
+    }).join(',\\n  ')
   }
 ];
 
