@@ -24,7 +24,9 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
     const { output, module } = options;
     return (svgFile: SVG2TSOutputFile) => {
         // TS
-        const filePath = `${output}${path.sep}${module}${path.sep}assets${path.sep}${svgFile.name}.ts`;
+        const filePath = `${output}${path.sep}${module}${path.sep}assets${
+            path.sep
+        }${svgFile.name}.ts`;
         const destBase = path.dirname(filePath);
         if (!fs.existsSync(destBase)) {
             mkdirRecursiveSync(destBase);
@@ -35,7 +37,9 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
         fs.writeFileSync(filePath, renderTS(svgFile, options));
 
         if (svgFile.contextDefaults) {
-            const ngFilePath = `${output}${path.sep}${module}${path.sep}components${path.sep}${svgFile.name}.component.ts`;
+            const ngFilePath = `${output}${path.sep}${module}${
+                path.sep
+            }components${path.sep}${svgFile.name}.component.ts`;
             const destBase = path.dirname(ngFilePath);
             if (!fs.existsSync(destBase)) {
                 mkdirRecursiveSync(destBase);
@@ -56,14 +60,29 @@ export function generateIndexFile(
             const context = file.contextDefaults
                 ? `, ${svgObjectName}Context`
                 : '';
-            return `export { ${svgObjectName}${context} } from './${file.name}';`;
+            return `export { ${svgObjectName}${context} } from './${
+                file.name
+            }';`;
         })
         .join('\n').concat(`
             export function getNgSvgTemplate(svg: any, context: string = 'context') {
-              return \`<svg [attr.class]="'${options.module}-'+context.uuid" [attr.width]="width" [attr.height]="height" [attr.viewBox]="viewBox">@@@styles@@@\${svg.svg}</svg>\`
-                .replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g, \` [attr.$1]="\${context}.$2"\`)
-                .replace(/{{(.+?)}}/g, '{{context.$1}}')
-                .replace('@@@styles@@@', \`<style>\${svg.css.replace(/{{(.+?)}}/g, '{{context.$1}}')}</style>\`);
+                const svgTemplate = \`
+                  <svg
+                    [attr.class]="'svg-library-'+context.uuid"
+                    [attr.width]="width"
+                    [attr.height]="height"
+                    [attr.viewBox]="viewBox">
+                    @@@styles@@@\${svg.svg}
+                  </svg>\`
+                  .replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g, \` [attr.$1]="\${context}.$2"\`)
+                  .replace(/{{(.+?)}}/g, '{{context.$1}}')
+                  .replace(
+                    '@@@styles@@@',
+                    \`<style>\${
+                      svg.css ? svg.css.replace(/{{(.+?)}}/g, '{{context.$1}}') : ''
+                    }</style>\`
+                  );
+                return svgTemplate;
             }
             export function getSVGViewbox(viewBox: any): string {
               return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
@@ -71,7 +90,9 @@ export function generateIndexFile(
         `);
 
     fs.writeFileSync(
-        `${options.output}${path.sep}${options.module}${path.sep}assets${path.sep}index.ts`,
+        `${options.output}${path.sep}${options.module}${path.sep}assets${
+            path.sep
+        }index.ts`,
         indexFile
     );
 
@@ -81,20 +102,22 @@ export function generateIndexFile(
 
     const componentsIndex = components
         .map(component => {
-            return `export { ${pascalCase(
+            return `export { ${pascalCase(component.name)}Component } from './${
                 component.name
-            )}Component } from './${component.name}.component';`;
+            }.component';`;
         })
         .concat(
-            `export {${pascalCase(
-                moduleName
-            )}Component} from './${options.module}.component'`
+            `export {${pascalCase(moduleName)}Component} from './${
+                options.module
+            }.component'`
         )
         .join('\n');
 
     // generate an index.ts of components
     fs.writeFileSync(
-        `${options.output}${path.sep}${options.module}${path.sep}components${path.sep}index.ts`,
+        `${options.output}${path.sep}${options.module}${path.sep}components${
+            path.sep
+        }index.ts`,
         componentsIndex
     );
 
@@ -110,9 +133,9 @@ export function generateIndexFile(
     );
 
     fs.writeFileSync(
-        `${options.output}${path.sep}${options.module}${path.sep}components${path.sep}${kebabCase(
-            options.module
-        )}.component.ts`,
+        `${options.output}${path.sep}${options.module}${path.sep}components${
+            path.sep
+        }${kebabCase(options.module)}.component.ts`,
         svgIconClassTemplate({
             assets: files.map(file => pascalCase(file.name)),
             components: components.map(component => ({
