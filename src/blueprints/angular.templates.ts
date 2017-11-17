@@ -108,6 +108,7 @@ export const svgIconClassTemplate = tsc<SvgIconClassTemplate>(
     `
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   ComponentFactoryResolver,
   Input,
@@ -160,16 +161,18 @@ const componentsMap = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class @{className}Component {
+  private _context: any;
   @ViewChild('dynSvg', { read: ViewContainerRef })
   viewContainerRef;
-
   @Input() width = 0;
   @Input() height = 0;
   @Input() viewBox = '';
   @Input()
   set context(ctx) {
+    this._context = ctx;
     if (this._iconComponent) {
       this._iconComponent.instance.context = ctx;
+      this.ref.markForCheck();
     }
   }
   @Input()
@@ -185,9 +188,16 @@ export class @{className}Component {
   private _iconComponent;
 
   constructor(
+    private ref: ChangeDetectorRef,
     private sanitizer: DomSanitizer,
     private componentFactoryResolver: ComponentFactoryResolver
   ) {}
+
+  ngOnInit() {
+    if (this._context) {
+      this.context = this._context;
+    }
+  }
 
   getViewBox() {
     return this.viewBox !== ''
