@@ -20,9 +20,10 @@ function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
     });
 }
 
-function getSvgAOT(svgFile: SVG2TSOutputFile) {
+function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     const svgTemplate = `
       <fvg
+        [attr.class]="\\'${kebabCase(options.module)}-\\'+context.uuid"
         [attr.width]="width"
         [attr.height]="height"
         [attr.viewBox]="viewBox">
@@ -55,7 +56,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
             mkdirRecursiveSync(destBase);
         }
         delete svgFile.path;
-        svgFile.svg = getSvgAOT(svgFile);
+        svgFile.svg = getSvgAOT(svgFile, options);
         delete svgFile.css;
 
         fs.writeFileSync(filePath, renderTS(svgFile, options));
