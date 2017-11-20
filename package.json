@@ -1,6 +1,6 @@
 {
     "name": "svg2ts",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "",
     "main": "lib/index",
     "bin": {
@@ -9,6 +9,7 @@
     "scripts": {
         "postinstall": "node -e 'require(\"./lib/utils/banner\").playBanner()'",
         "build": "tsc",
+        "prepublishOnly": "tsc",
         "test":
             "node ./lib/index.js -b typescript -i ./tests/svg-sources -o ./tests/ts-output"
     },
