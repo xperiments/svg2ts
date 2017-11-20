@@ -18,21 +18,20 @@ import {
 import {
   @{className},
   @{className}Context,
-  getNgSvgTemplate,
   getSVGViewbox
 } from '../assets';
 
 @Component({
   selector: '@{selector}',
-  template: getNgSvgTemplate(@{className}),
+  template: @{className}.svg,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class @{className}Component implements OnInit {
   static UUID = 0;
-  private _context:@{className}Context = @{className}.contextDefaults;
-  @Input() width:number = @{className}.width;
-  @Input() height:number = @{className}.height;
-  @Input() viewBox:string = getSVGViewbox(@{className}.viewBox);
+  private _context: @{className}Context = @{className}.contextDefaults;
+  @Input() width: number | string = @{className}.width;
+  @Input() height: number | string = @{className}.height;
+  @Input() viewBox: string = getSVGViewbox(@{className}.viewBox);
   @Input()
   set context(ctx: @{className}Context) {
     this.updateContext(ctx);
@@ -44,7 +43,7 @@ export class @{className}Component implements OnInit {
   ngOnInit() {
     this.context.uuid = @{className}Component.UUID++;
   }
-  updateContext(ctx:any) {
+  updateContext(ctx: any) {
     this._context = Object.assign(
       {},
       this._context ? this._context : @{className}.contextDefaults,
@@ -66,7 +65,7 @@ export const angularDynamicModuleTemplate = tsc<AngularDynamicModuleTemplate>(
     `
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import  {
+import {
   @{
     components.map((component)=>{
       return \`@{component}Component\`;
@@ -85,8 +84,8 @@ const comps = [
 @NgModule({
   declarations: [ ...comps ],
   exports: [ ...comps ],
-  imports:[CommonModule],
-  entryComponents: [...comps ]
+  imports:[ CommonModule ],
+  entryComponents: [ ...comps ]
 })
 export class @{moduleName}Module { }
 `,
@@ -113,7 +112,8 @@ import {
   ComponentFactoryResolver,
   Input,
   ViewChild,
-  ViewContainerRef
+  ViewContainerRef,
+  OnInit
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -158,9 +158,10 @@ const componentsMap = {
     </svg>
   </ng-container>
   <ng-template #dynSvg></ng-template>\\\`,
+  styles: [':host{ display: inline-block; }'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class @{className}Component {
+export class @{className}Component implements OnInit {
   private _context: any;
   @ViewChild('dynSvg', { read: ViewContainerRef })
   viewContainerRef;

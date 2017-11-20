@@ -20,6 +20,29 @@ function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
     });
 }
 
+function getSvgAOT(svgFile: SVG2TSOutputFile) {
+    const svgTemplate = `
+      <fvg
+        [attr.width]="width"
+        [attr.height]="height"
+        [attr.viewBox]="viewBox">
+        @@@styles@@@${svgFile.svg}
+      </fvg>`
+        .replace(/ (\S+?)=['"]{{(.+?)}}['"]/g, ` [attr.$1]="context.$2"`)
+        .replace(/{{(.+?)}}/g, '{{context.$1}}')
+        .replace(
+            '@@@styles@@@',
+            `<style>${
+                svgFile.css
+                    ? svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}')
+                    : ''
+            }</style>`
+        );
+    return compactSVG(svgTemplate.replace(/\s/g, ' '))
+        .replace('<fvg', '<svg')
+        .replace('</fvg>', '</svg>');
+}
+
 export function saveFile(options: SVG2TSCmd, blueprint: string) {
     const { output, module } = options;
     return (svgFile: SVG2TSOutputFile) => {
@@ -32,7 +55,8 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
             mkdirRecursiveSync(destBase);
         }
         delete svgFile.path;
-        svgFile.svg = compactSVG(svgFile.svg);
+        svgFile.svg = getSvgAOT(svgFile);
+        delete svgFile.css;
 
         fs.writeFileSync(filePath, renderTS(svgFile, options));
 
@@ -65,25 +89,6 @@ export function generateIndexFile(
             }';`;
         })
         .join('\n').concat(`
-            export function getNgSvgTemplate(svg: any, context: string = 'context') {
-                const svgTemplate = \`
-                  <svg
-                    [attr.class]="'svg-library-'+context.uuid"
-                    [attr.width]="width"
-                    [attr.height]="height"
-                    [attr.viewBox]="viewBox">
-                    @@@styles@@@\${svg.svg}
-                  </svg>\`
-                  .replace(/ (\\S+?)=['"]{{(.+?)}}['"]/g, \` [attr.$1]="\${context}.$2"\`)
-                  .replace(/{{(.+?)}}/g, '{{context.$1}}')
-                  .replace(
-                    '@@@styles@@@',
-                    \`<style>\${
-                      svg.css ? svg.css.replace(/{{(.+?)}}/g, '{{context.$1}}') : ''
-                    }</style>\`
-                  );
-                return svgTemplate;
-            }
             export function getSVGViewbox(viewBox: any): string {
               return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
             }
