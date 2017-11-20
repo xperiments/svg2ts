@@ -46,8 +46,8 @@ export function parseAttributes(root: any): SVG2TSSVGMetadata {
     const height = root.match(svgHeightRegExp);
     const viewBox = root.match(svgViewBoxRegExp);
     return {
-        ...width ? { width: parseInt(width[2], 10) } : {},
-        ...height ? { height: parseInt(height[2], 10) } : {},
+        ...width ? { width: width[2] } : {},
+        ...height ? { height: height[2] } : {},
         ...viewBox ? { viewBox: parseViewbox(viewBox[2]) } : {}
     };
 }
@@ -65,7 +65,9 @@ export function getMetadata(svgFile: SVG2TSSourceFile) {
         }
     }
     console.log(
-        `[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`
+        `[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${
+            svgFile.path
+        }\x1b[0m`
     );
     return {};
 }
