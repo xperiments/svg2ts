@@ -147,7 +147,7 @@ const componentsMap = {
 @Component({
   selector: '@{selector}',
   template: \\\`
-  <ng-container *ngIf="!icon.contextDefaults">
+  <ng-container *ngIf="!iconAsset.contextDefaults">
     <svg
       [attr.width]="width"
       [attr.height]="height"
@@ -181,11 +181,11 @@ export class @{className}Component implements OnInit {
     this.createIcon(icon);
   }
   get icon() {
-    return this._icon;
+    return this.iconAsset;
   }
 
   sanitizedFile: SafeHtml;
-  private _icon: any;
+  iconAsset: any;
   private _iconComponent;
 
   constructor(
@@ -203,35 +203,39 @@ export class @{className}Component implements OnInit {
   getViewBox() {
     return this.viewBox !== ''
       ? this.viewBox
-      : this._icon.viewBox
+      : this.iconAsset.viewBox
         ? [
-            this._icon.viewBox.minx,
-            this._icon.viewBox.miny,
-            this._icon.viewBox.width,
-            this._icon.viewBox.height
+            this.iconAsset.viewBox.minx,
+            this.iconAsset.viewBox.miny,
+            this.iconAsset.viewBox.width,
+            this.iconAsset.viewBox.height
           ].join(' ')
-        : [0, 0, this._icon.width, this._icon.height].join(' ');
+        : [0, 0, this.iconAsset.width, this.iconAsset.height].join(' ');
   }
 
   private createIcon(icon: string) {
-    this._icon = assetsMap[icon];
-    if (!this._icon['contextDefaults']) {
-      this.createStaticIcon();
-    } else {
-      this.createDynamicIcon(icon);
-    }
+      this.iconAsset = assetsMap[icon];
+      if (!this.iconAsset) {
+        return;
+      }
+      if (this.iconAsset && !this.iconAsset['contextDefaults']) {
+        this.createStaticIcon();
+      } else {
+        this.createDynamicIcon(icon);
+      }
   }
 
   private createStaticIcon() {
-    this.width = this._icon.width;
-    this.height = this._icon.height;
-    const svg =
-      (this._icon.css
-        ? \\\`<style>\\\${this._icon.css.replace(
-            /\\\.((?!})[\\\\S]+?){{uuid}}/g,
+    this.width = this.iconAsset.width;
+    this.height = this.iconAsset.height;
+    const svg = (
+      (this.iconAsset.css
+        ? \\\`<style>\\\${this.iconAsset.css.replace(
+            /.((?!})[\\\\S]+?){{uuid}}/g,
             ''
         )}</style>\\\`
-        : '') + \\\`\\\${this._icon.svg}\\\`;
+        : '') + \\\`\\\${this.iconAsset.svg}\\\`
+    ).replace(/<svg.+?>([\\\\s\\\\S]+?)<\\\\/svg>/g, '$1');
 
     this.sanitizedFile = this.sanitizer.bypassSecurityTrustHtml(svg);
   }
