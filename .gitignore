@@ -7,6 +7,6 @@ node_modules/
 .DS_Store
 
 ### Customs ###
-tests/ts-output
+tests
 lib
 package-lock.json
