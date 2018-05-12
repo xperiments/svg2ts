@@ -147,7 +147,7 @@ export function generateIndexFile(
       moduleName,
       className: `${pascalCase(options.module)}`,
       pascalCase: pascalCase,
-      selector: `${kebabCase(options.module)}-svg`
+      selector: `${kebabCase(options.module)}`
     })
   );
 }
