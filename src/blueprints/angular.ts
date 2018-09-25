@@ -77,18 +77,28 @@ export function generateIndexFile(
   files: SVG2TSOutputFile[]
 ) {
   // generate an index.ts of svg's
-  const indexFile = files
+  const indexFileExports = files
     .map((file: SVG2TSOutputFile) => {
       const svgObjectName = pascalCase(file.name);
       const context = file.contextDefaults ? `, ${svgObjectName}Context` : "";
       return `export { ${svgObjectName}${context} } from './${file.name}';`;
     })
-    .join("\n").concat(`
-            export function getSVGViewbox(viewBox: any): string {
-              return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
-            }
-        `);
+    .join("\n");
 
+  const indexFileType = `export type ${pascalCase(
+    options.module
+  )}Asset = ${files
+    .map((file: SVG2TSOutputFile) => {
+      return `'${file.name}'`;
+    })
+    .join("|")};`;
+
+  const indexFile = indexFileExports.concat(indexFileType).concat(`
+    export function getSVGViewbox(viewBox: any): string {
+      return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
+    }
+  `);
+  console.log(indexFile);
   fs.writeFileSync(
     `${options.output}${path.sep}${options.module}${path.sep}assets${
       path.sep

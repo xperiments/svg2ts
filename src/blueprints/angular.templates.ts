@@ -1,13 +1,13 @@
-import { tsc } from '../utils/core';
-import { SVG2TSOutputFile } from '../types';
+import { tsc } from "../utils/core";
+import { SVG2TSOutputFile } from "../types";
 
 export interface AngularDynamicClassTemplate {
-    className: string;
-    selector: string;
+  className: string;
+  selector: string;
 }
 
 export const angularDynamicClassTemplate = tsc<AngularDynamicClassTemplate>(
-    `
+  `
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -53,16 +53,16 @@ export class @{className}Component implements OnInit {
   }
 }
 `,
-    { className: '', selector: '' }
+  { className: "", selector: "" }
 );
 
 export interface AngularDynamicModuleTemplate {
-    moduleName: string;
-    components: string[];
+  moduleName: string;
+  components: string[];
 }
 
 export const angularDynamicModuleTemplate = tsc<AngularDynamicModuleTemplate>(
-    `
+  `
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -89,22 +89,22 @@ const comps = [
 })
 export class @{moduleName}Module { }
 `,
-    {
-        moduleName: '',
-        components: []
-    }
+  {
+    moduleName: "",
+    components: []
+  }
 );
 
 export interface SvgIconClassTemplate {
-    moduleName: string;
-    className: string;
-    selector: string;
-    components: { component: string; name: string }[];
-    assets: string[];
-    pascalCase: (str: string) => string;
+  moduleName: string;
+  className: string;
+  selector: string;
+  components: { component: string; name: string }[];
+  assets: string[];
+  pascalCase: (str: string) => string;
 }
 export const svgIconClassTemplate = tsc<SvgIconClassTemplate>(
-    `
+  `
 export interface SVG2TSDimensions {
   minx?: number | undefined;
   miny?: number | undefined;
@@ -170,7 +170,6 @@ const componentsMap = {
       [attr.height]="height"
       [attr.viewBox]="getViewBox()"
       [innerHTML] ="sanitizedFile"
-      [attr.class] ="templateClass"
       >
     </svg>
   </ng-container>
@@ -266,12 +265,12 @@ export class @{className}Component implements OnInit {
 
 }
 `,
-    {
-        moduleName: '',
-        className: '',
-        selector: '',
-        components: [],
-        assets: [],
-        pascalCase: (str: string): string => ''
-    }
+  {
+    moduleName: "",
+    className: "",
+    selector: "",
+    components: [],
+    assets: [],
+    pascalCase: (str: string): string => ""
+  }
 );
