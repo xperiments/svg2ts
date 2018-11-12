@@ -1,5 +1,4 @@
 import { tsc } from "../utils/core";
-import { SVG2TSOutputFile } from "../types";
 
 export interface AngularDynamicClassTemplate {
   className: string;
@@ -49,7 +48,7 @@ export class @{className}Component implements OnInit {
       this._context ? this._context : @{className}.contextDefaults,
       ctx
     );
-    this.ref.markForCheck();
+    this._ref.markForCheck();
   }
 }
 `,
@@ -106,20 +105,20 @@ export interface SvgIconClassTemplate {
 export const svgIconClassTemplate = tsc<SvgIconClassTemplate>(
   `
 export interface SVG2TSDimensions {
+  height?: number | undefined;
   minx?: number | undefined;
   miny?: number | undefined;
   width?: number | undefined;
-  height?: number | undefined;
 }
 
 export interface SVG2TSFile {
+  contextDefaults?: { [key: string]: string | number } | undefined;
+  css?: string;
+  height?: string | undefined;
   name: string;
   svg: string;
-  css?: string;
-  width?: string | undefined;
-  height?: string | undefined;
   viewBox?: SVG2TSDimensions | undefined;
-  contextDefaults?: { [key: string]: string | number } | undefined;
+  width?: string | undefined;
 }
 
 import {
@@ -130,9 +129,9 @@ import {
   Input,
   ViewChild,
   ViewContainerRef,
-  OnInit
+  OnInit,
+  AfterViewInit
 } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import {
   @{assets.join(\',\\n  \')}
@@ -169,7 +168,6 @@ const componentsMap = {
       [attr.width]="width"
       [attr.height]="height"
       [attr.viewBox]="getViewBox()"
-      [innerHTML] ="sanitizedFile"
       >
     </svg>
   </ng-container>
@@ -177,46 +175,36 @@ const componentsMap = {
   styles: [':host{ display: inline-block; position: relative; }'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class @{className}Component implements OnInit {
-  private _context: any;
-  @ViewChild('dynSvg', { read: ViewContainerRef })
-  viewContainerRef;
-  @Input() width: string | number = 0;
-  @Input() height: string | number = 0;
-  @Input() viewBox = '';
-  @Input()
-  set context(ctx) {
+export class @{className}Component implements OnInit, AfterViewInit {
+  @Input() public height: string | number = 0;
+  @Input() public viewBox = '';
+  @ViewChild('dynSvg', { read: ViewContainerRef }) public viewContainerRef;
+  @Input() public width: string | number = 0;
+  @Input() public set context(ctx) {
     this._context = ctx;
     if (this._iconComponent) {
       this._iconComponent.instance.context = ctx;
-      this.ref.markForCheck();
+      this._ref.markForCheck();
     }
   }
-  @Input()
-  set icon(icon: string) {
-    this.createIcon(icon);
+  @Input() public set icon(icon: string) {
+    this._createIcon(icon);
   }
-  get iconFile(): SVG2TSFile {
+  public get iconFile(): SVG2TSFile {
     return this._icon;
   }
-
-  sanitizedFile: SafeHtml;
-  _icon: SVG2TSFile;
+  
+  private _context: any;
+  private _icon: SVG2TSFile;
   private _iconComponent;
+  private _isStaticIcon = false;
 
   constructor(
-    private ref: ChangeDetectorRef,
-    private sanitizer: DomSanitizer,
-    private componentFactoryResolver: ComponentFactoryResolver
+    private _ref: ChangeDetectorRef,
+    private _componentFactoryResolver: ComponentFactoryResolver
   ) {}
 
-  ngOnInit() {
-    if (this._context) {
-      this.context = this._context;
-    }
-  }
-
-  getViewBox() {
+  public getViewBox() {
     return this.viewBox !== ''
       ? this.viewBox
       : this._icon.viewBox
@@ -229,19 +217,31 @@ export class @{className}Component implements OnInit {
         : [0, 0, this._icon.width, this._icon.height].join(' ');
   }
 
-  private createIcon(icon: string) {
+  public ngAfterViewInit() {
+    if(this._isStaticIcon){
+      this._createStaticIcon();
+    }
+  }
+
+  public ngOnInit() {
+    if (this._context) {
+      this.context = this._context;
+    }
+  }
+
+  private _createIcon(icon: string) {
       this._icon = assetsMap[icon];
       if (!this._icon) {
         return;
       }
       if (this._icon && !this._icon['contextDefaults']) {
-        this.createStaticIcon();
+        this._isStaticIcon = true;
       } else {
-        this.createDynamicIcon(icon);
+        this._createDynamicIcon(icon);
       }
   }
 
-  private createStaticIcon() {
+  private _createStaticIcon() {
     this.width = this._icon.width;
     this.height = this._icon.height;
     const svg =
@@ -251,13 +251,15 @@ export class @{className}Component implements OnInit {
             ''
         )}</style>\\\`
         : '') + \\\`\\\${this._icon.svg}\\\`;
+    const inline = document.createElement('div');
 
-    this.sanitizedFile = this.sanitizer.bypassSecurityTrustHtml(svg);
+    inline.innerHTML = svg;
+    this.elementRef.nativeElement.querySelector('svg').appendChild(inline.firstChild);
   }
 
-  private createDynamicIcon(icon: string) {
+  private _createDynamicIcon(icon: string) {
     const clazz = componentsMap[icon];
-    const factory = this.componentFactoryResolver.resolveComponentFactory<any>(
+    const factory = this._componentFactoryResolver.resolveComponentFactory<any>(
       clazz
     );
     this._iconComponent = this.viewContainerRef.createComponent(factory);
