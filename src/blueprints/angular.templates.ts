@@ -126,6 +126,7 @@ import {
   ChangeDetectorRef,
   Component,
   ComponentFactoryResolver,
+  ElementRef,
   Input,
   ViewChild,
   ViewContainerRef,
@@ -201,7 +202,8 @@ export class @{className}Component implements OnInit, AfterViewInit {
 
   constructor(
     private _ref: ChangeDetectorRef,
-    private _componentFactoryResolver: ComponentFactoryResolver
+    private _componentFactoryResolver: ComponentFactoryResolver,
+    private _elementRef: ElementRef
   ) {}
 
   public getViewBox() {
@@ -236,14 +238,14 @@ export class @{className}Component implements OnInit, AfterViewInit {
       }
       if (this._icon && !this._icon['contextDefaults']) {
         this._isStaticIcon = true;
+        this.width = this._icon.width;
+        this.height = this._icon.height;
       } else {
         this._createDynamicIcon(icon);
       }
   }
 
   private _createStaticIcon() {
-    this.width = this._icon.width;
-    this.height = this._icon.height;
     const svg =
       (this._icon.css
         ? \\\`<style>\\\${this._icon.css.replace(
@@ -254,7 +256,7 @@ export class @{className}Component implements OnInit, AfterViewInit {
     const inline = document.createElement('div');
 
     inline.innerHTML = svg;
-    this.elementRef.nativeElement.querySelector('svg').appendChild(inline.firstChild);
+    this._elementRef.nativeElement.querySelector('svg').appendChild(inline.firstChild);
   }
 
   private _createDynamicIcon(icon: string) {
