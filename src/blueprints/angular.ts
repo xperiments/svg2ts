@@ -1,15 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
-
 import { SVG2TSCmd, SVG2TSOutputFile } from "../types";
-import {
-  angularDynamicClassTemplate,
-  angularDynamicModuleTemplate,
-  svgIconClassTemplate
-} from "./angular.templates";
-import { capitalize, camelCase, kebabCase, pascalCase } from "../utils/strings";
-import { compactSVG } from "../utils/svg";
 import { mkdirRecursiveSync } from "../utils/core";
+import { kebabCase, pascalCase } from "../utils/strings";
+import { compactSVG } from "../utils/svg";
+import { angularDynamicClassTemplate, angularDynamicModuleTemplate, svgIconClassTemplate } from "./angular.templates";
 import { render as renderTS } from "./typescript";
 
 function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
@@ -33,9 +28,7 @@ function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     .replace(/{{(.+?)}}/g, "{{context.$1}}")
     .replace(
       "@@@styles@@@",
-      `<style>${
-        svgFile.css ? svgFile.css.replace(/{{(.+?)}}/g, "{{context.$1}}") : ""
-      }</style>`
+      `<style>${svgFile.css ? svgFile.css.replace(/{{(.+?)}}/g, "{{context.$1}}") : ""}</style>`
     );
   return compactSVG(svgTemplate.replace(/\s/g, " "))
     .replace("<fvg", "<svg")
@@ -46,9 +39,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
   const { output, module } = options;
   return (svgFile: SVG2TSOutputFile) => {
     // TS
-    const filePath = `${output}${path.sep}${module}${path.sep}assets${
-      path.sep
-    }${svgFile.name}.ts`;
+    const filePath = `${output}${path.sep}${module}${path.sep}assets${path.sep}${svgFile.name}.ts`;
     const destBase = path.dirname(filePath);
     if (!fs.existsSync(destBase)) {
       mkdirRecursiveSync(destBase);
@@ -60,9 +51,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
     fs.writeFileSync(filePath, renderTS(svgFile, options));
 
     if (svgFile.contextDefaults) {
-      const ngFilePath = `${output}${path.sep}${module}${path.sep}components${
-        path.sep
-      }${svgFile.name}.component.ts`;
+      const ngFilePath = `${output}${path.sep}${module}${path.sep}components${path.sep}${svgFile.name}.component.ts`;
       const destBase = path.dirname(ngFilePath);
       if (!fs.existsSync(destBase)) {
         mkdirRecursiveSync(destBase);
@@ -72,10 +61,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
   };
 }
 
-export function generateIndexFile(
-  options: SVG2TSCmd,
-  files: SVG2TSOutputFile[]
-) {
+export function generateIndexFile(options: SVG2TSCmd, files: SVG2TSOutputFile[]) {
   // generate an index.ts of svg's
   const indexFileExports = files
     .map((file: SVG2TSOutputFile) => {
@@ -85,9 +71,7 @@ export function generateIndexFile(
     })
     .join("\n");
 
-  const indexFileType = `export type ${pascalCase(
-    options.module
-  )}Asset = ${files
+  const indexFileType = `export type ${pascalCase(options.module)}Asset = ${files
     .map((file: SVG2TSOutputFile) => {
       return `'${file.name}'`;
     })
@@ -98,13 +82,8 @@ export function generateIndexFile(
       return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
     }
   `);
-  console.log(indexFile);
-  fs.writeFileSync(
-    `${options.output}${path.sep}${options.module}${path.sep}assets${
-      path.sep
-    }index.ts`,
-    indexFile
-  );
+
+  fs.writeFileSync(`${options.output}${path.sep}${options.module}${path.sep}assets${path.sep}index.ts`, indexFile);
 
   const components = files.filter(file => file.contextDefaults);
   const namedComponents = components.map(_ => pascalCase(_.name));
@@ -112,20 +91,12 @@ export function generateIndexFile(
 
   const componentsIndex = components
     .map(component => {
-      return `export { ${pascalCase(component.name)}Component } from './${
-        component.name
-      }.component';`;
+      return `export { ${pascalCase(component.name)}Component } from './${component.name}.component';`;
     })
-    .concat(
-      `export {${pascalCase(moduleName)}Component} from './${
-        options.module
-      }.component'`
-    )
+    .concat(`export {${pascalCase(moduleName)}Component} from './${options.module}.component'`)
     .join("\n");
 
-  const componentsIndexDir = `${options.output}${path.sep}${options.module}${
-    path.sep
-  }components`;
+  const componentsIndexDir = `${options.output}${path.sep}${options.module}${path.sep}components`;
 
   if (!fs.existsSync(componentsIndexDir)) {
     mkdirRecursiveSync(componentsIndexDir);
@@ -135,9 +106,7 @@ export function generateIndexFile(
 
   // generate the module.ts file
   fs.writeFileSync(
-    `${options.output}${path.sep}${options.module}${path.sep}${kebabCase(
-      options.module
-    )}.module.ts`,
+    `${options.output}${path.sep}${options.module}${path.sep}${kebabCase(options.module)}.module.ts`,
     angularDynamicModuleTemplate({
       components: namedComponents.concat(pascalCase(moduleName)),
       moduleName
@@ -145,9 +114,9 @@ export function generateIndexFile(
   );
 
   fs.writeFileSync(
-    `${options.output}${path.sep}${options.module}${path.sep}components${
-      path.sep
-    }${kebabCase(options.module)}.component.ts`,
+    `${options.output}${path.sep}${options.module}${path.sep}components${path.sep}${kebabCase(
+      options.module
+    )}.component.ts`,
     svgIconClassTemplate({
       assets: files.map(file => pascalCase(file.name)),
       components: components.map(component => ({
