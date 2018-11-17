@@ -1,4 +1,4 @@
-import { tsc } from "../utils/core";
+import { tsc } from '../utils/core';
 
 export interface AngularDynamicClassTemplate {
   className: string;
@@ -52,7 +52,7 @@ export class @{className}Component implements OnInit {
   }
 }
 `,
-  { className: "", selector: "" }
+  { className: '', selector: '' }
 );
 
 export interface AngularDynamicModuleTemplate {
@@ -89,7 +89,7 @@ const comps = [
 export class @{moduleName}Module { }
 `,
   {
-    moduleName: "",
+    moduleName: '',
     components: []
   }
 );
@@ -270,11 +270,11 @@ export class @{className}Component implements OnInit, AfterViewInit {
 }
 `,
   {
-    moduleName: "",
-    className: "",
-    selector: "",
+    moduleName: '',
+    className: '',
+    selector: '',
     components: [],
     assets: [],
-    pascalCase: (str: string): string => ""
+    pascalCase: (str: string): string => ''
   }
 );

@@ -1,11 +1,11 @@
-import * as fs from "fs";
-import * as path from "path";
-import { SVG2TSCmd, SVG2TSOutputFile } from "../types";
-import { mkdirRecursiveSync } from "../utils/core";
-import { kebabCase, pascalCase } from "../utils/strings";
-import { compactSVG } from "../utils/svg";
-import { angularDynamicClassTemplate, angularDynamicModuleTemplate, svgIconClassTemplate } from "./angular.templates";
-import { render as renderTS } from "./typescript";
+import * as fs from 'fs';
+import * as path from 'path';
+import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
+import { mkdirRecursiveSync } from '../utils/core';
+import { kebabCase, pascalCase } from '../utils/strings';
+import { compactSVG } from '../utils/svg';
+import { angularDynamicClassTemplate, angularDynamicModuleTemplate, svgIconClassTemplate } from './angular.templates';
+import { render as renderTS } from './typescript';
 
 function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
   delete svgFile.contextInterface;
@@ -25,14 +25,14 @@ function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
         @@@styles@@@${svgFile.svg}
       </fvg>`
     .replace(/ (\S+?)=['"]{{(.+?)}}['"]/g, ` [attr.$1]="context.$2"`)
-    .replace(/{{(.+?)}}/g, "{{context.$1}}")
+    .replace(/{{(.+?)}}/g, '{{context.$1}}')
     .replace(
-      "@@@styles@@@",
-      `<style>${svgFile.css ? svgFile.css.replace(/{{(.+?)}}/g, "{{context.$1}}") : ""}</style>`
+      '@@@styles@@@',
+      `<style>${svgFile.css ? svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}') : ''}</style>`
     );
-  return compactSVG(svgTemplate.replace(/\s/g, " "))
-    .replace("<fvg", "<svg")
-    .replace("</fvg>", "</svg>");
+  return compactSVG(svgTemplate.replace(/\s/g, ' '))
+    .replace('<fvg', '<svg')
+    .replace('</fvg>', '</svg>');
 }
 
 export function saveFile(options: SVG2TSCmd, blueprint: string) {
@@ -66,16 +66,16 @@ export function generateIndexFile(options: SVG2TSCmd, files: SVG2TSOutputFile[])
   const indexFileExports = files
     .map((file: SVG2TSOutputFile) => {
       const svgObjectName = pascalCase(file.name);
-      const context = file.contextDefaults ? `, ${svgObjectName}Context` : "";
+      const context = file.contextDefaults ? `, ${svgObjectName}Context` : '';
       return `export { ${svgObjectName}${context} } from './${file.name}';`;
     })
-    .join("\n");
+    .join('\n');
 
   const indexFileType = `export type ${pascalCase(options.module)}Asset = ${files
     .map((file: SVG2TSOutputFile) => {
       return `'${file.name}'`;
     })
-    .join("|")};`;
+    .join('|')};`;
 
   const indexFile = indexFileExports.concat(indexFileType).concat(`
     export function getSVGViewbox(viewBox: any): string {
@@ -94,7 +94,7 @@ export function generateIndexFile(options: SVG2TSCmd, files: SVG2TSOutputFile[])
       return `export { ${pascalCase(component.name)}Component } from './${component.name}.component';`;
     })
     .concat(`export {${pascalCase(moduleName)}Component} from './${options.module}.component'`)
-    .join("\n");
+    .join('\n');
 
   const componentsIndexDir = `${options.output}${path.sep}${options.module}${path.sep}components`;
 
