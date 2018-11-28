@@ -87,12 +87,7 @@ export function getViewBoxDimensions(attrs: any): SVG2TSSVGMetadata {
     };
   }
 
-  return {
-    viewBox: {
-      width: attrs.viewBox.width,
-      height: attrs.viewBox.height
-    }
-  };
+  return { width: '100%', height: '100%', viewBox: { width: attrs.viewBox.width, height: attrs.viewBox.height } };
 }
 
 export function getInlineStyles(svg: string): string {
