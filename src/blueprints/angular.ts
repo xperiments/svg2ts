@@ -28,11 +28,27 @@ function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     .replace(/{{(.+?)}}/g, '{{context.$1}}')
     .replace(
       '@@@styles@@@',
-      `<style>${svgFile.css ? svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}') : ''}</style>`
-    );
+      !svgFile.css ? '' : `<style>${svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}')}</style>`
+    )
+    .replace(/xlink:href=["']#(.*?)["']/g, `[attr.xlink:href]="getXlinkBase(\\\'$1\\\')"`)
+    .replace(/([\S]*?)=["']url\(#(.*?)\)["']/g, `[attr.$1]="getURLBase(\\\'$2\\\')"`);
   return compactSVG(svgTemplate.replace(/\s/g, ' '))
     .replace('<fvg', '<svg')
     .replace('</fvg>', '</svg>');
+}
+
+function getStaticSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
+  const svgTemplate = `
+      <fvg>@@@styles@@@${svgFile.svg}</fvg>`
+    .replace(/ (\S+?)=['"]{{(.+?)}}['"]/g, ` [attr.$1]="context.$2"`)
+    .replace(/{{(.+?)}}/g, '{{context.$1}}')
+    .replace(
+      '@@@styles@@@',
+      !svgFile.css ? '' : `<style>${svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}')}</style>`
+    );
+  return compactSVG(svgTemplate.replace(/\s/g, ' '))
+    .replace('<fvg>', '')
+    .replace('</fvg>', '');
 }
 
 export function saveFile(options: SVG2TSCmd, blueprint: string) {
@@ -45,7 +61,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
       mkdirRecursiveSync(destBase);
     }
     delete svgFile.path;
-    svgFile.svg = getSvgAOT(svgFile, options);
+    svgFile.svg = svgFile.contextDefaults ? getSvgAOT(svgFile, options) : getStaticSvgAOT(svgFile, options);
     delete svgFile.css;
 
     fs.writeFileSync(filePath, renderTS(svgFile, options));

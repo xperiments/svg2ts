@@ -26,6 +26,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class @{className}Component implements OnInit {
+  public baseUrl:string;
   static UUID = 0;
   private _context: @{className}Context = @{className}.contextDefaults;
   @Input() width: number | string = @{className}.width;
@@ -38,8 +39,9 @@ export class @{className}Component implements OnInit {
   get context() {
       return this._context;
   }
-  constructor(private ref: ChangeDetectorRef) {}
+  constructor(private _ref: ChangeDetectorRef) {}
   ngOnInit() {
+    this.baseUrl = window.location.href.replace(window.location.hash, '');
     this.context.uuid = @{className}Component.UUID++;
   }
   updateContext(ctx: any) {
@@ -50,6 +52,13 @@ export class @{className}Component implements OnInit {
     );
     this._ref.markForCheck();
   }
+  getURLBase(value) {
+    return \\\`url('\\\${this.baseUrl}#\\\${value}')\\\`;
+  }
+  getXlinkBase(value) {
+    return \\\`\\\${ this.baseUrl }#\\\${ value }\\\`;
+  }
+
 }
 `,
   { className: '', selector: '' }
@@ -252,7 +261,7 @@ export class @{className}Component implements OnInit, AfterViewInit {
             /.((?!})[\\\\S]+?){{uuid}}/g,
             ''
         )}</style>\\\`
-        : '') + \\\`\\\${this._icon.svg}\\\`;
+        : '') + \\\`<svg><g>\\\${this._resolveBasePath(this._icon.svg)}</g></svg>\\\`;
     const inline = document.createElement('div');
 
     inline.innerHTML = svg;
@@ -267,6 +276,14 @@ export class @{className}Component implements OnInit, AfterViewInit {
     this._iconComponent = this.viewContainerRef.createComponent(factory);
   }
 
+  private _resolveBasePath(svg:string) {
+    const baseUrl = window.location.href.replace(window.location.hash, '');
+
+    return svg
+      .replace(/xlink:href=["']#(.*?)["']/g, \\\`xlink:href="\\\${baseUrl}#\\\$1"\\\`)
+      .replace(/url\\\\([']?#(.*?)[']?\\\\)/g, \\\`url(\\\${baseUrl}#\\\$1)\\\`);
+  }
+  
 }
 `,
   {
