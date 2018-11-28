@@ -12,8 +12,8 @@ export interface SVG2TSContext {
 export interface SVG2TSDimensions {
   minx?: number | undefined;
   miny?: number | undefined;
-  width?: number | undefined;
-  height?: number | undefined;
+  width?: number | string | undefined;
+  height?: number | string | undefined;
 }
 
 export interface SVG2TSOutputFile extends SVG2TSDimensions, SVG2TSSourceFile {
@@ -30,7 +30,7 @@ export interface SVG2TSSourceFile {
 }
 
 export interface SVG2TSSVGMetadata {
-  width?: number | undefined;
-  height?: number | undefined;
+  width?: number | string | undefined;
+  height?: number | string | undefined;
   viewBox?: SVG2TSDimensions | undefined;
 }
