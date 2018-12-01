@@ -12,25 +12,25 @@ export function getContextDefinition(content: string) {
     : {};
 }
 
-export function getContextDefaults(file: string): SVG2TSContext | undefined {
+export function getContextDefaults(file: string): SVG2TSContext {
   const hasDynamicData = file.match(propertyValueKeyRegExp);
   return hasDynamicData ? hasDynamicData.reduce(contextDefaultsReducer, {}) : {};
 }
 
 export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile {
   const { width, height, viewBox } = getMetadata(fileObj);
-  const contextInterface = getContextDefinition(fileObj.svg);
+  const contextInterfaceSvg = getContextDefinition(fileObj.svg);
   const contextInterfaceCss = getContextDefinition(fileObj.css as string);
-  const contextDefaults = getContextDefaults(fileObj.svg);
+  const contextDefaultsSvg = getContextDefaults(fileObj.svg);
   const contextDefaultsCss = getContextDefaults(fileObj.css as string);
-  const interfaceDef = JSON.stringify(Object.assign({}, contextInterface, contextInterfaceCss))
+  const contextInterface = JSON.stringify(Object.assign({}, contextInterfaceSvg, contextInterfaceCss))
     .replace(doubleQuoteRegExp, '')
     .replace(singleQuoteRegExp, ';');
 
-  const defaultsDef = Object.assign({}, contextDefaults, contextDefaultsCss);
+  const contextDefaults = Object.assign({}, contextDefaultsSvg, contextDefaultsCss);
 
   const { path, name } = fileObj;
-  let { svg, css } = fileObj;
+  const { svg, css } = fileObj;
 
   return {
     ...(width ? { width: width } : {}),
@@ -40,8 +40,8 @@ export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile
     name,
     svg: removeDefaultTemplateValues(svg).replace(singleQuoteRegExp, "\\'"),
     ...(css ? { css: removeDefaultTemplateValues(css) } : {}),
-    ...(interfaceDef !== '{}' ? { contextInterface: interfaceDef } : {}),
-    ...(JSON.stringify(contextDefaults) !== '{}' ? { contextDefaults: defaultsDef } : {})
+    ...(contextInterface !== '{}' ? { contextInterface } : {}),
+    ...(JSON.stringify(contextDefaultsSvg) !== '{}' ? { contextDefaults } : {})
   };
 }
 

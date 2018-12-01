@@ -3,14 +3,14 @@ export type Dictionary = { [key: string]: any };
 export interface CommandLineToolsOptions {
   aliases: Dictionary;
   help: Dictionary;
-  banner: string[];
+  banner: Array<string>;
   version: string;
 }
 
 export class CommandLineTools<TypedArgs> {
   args: TypedArgs;
   private arguments: TypedArgs;
-  constructor(private packageName: string, args: string[], private options: CommandLineToolsOptions) {
+  constructor(private packageName: string, args: Array<string>, private options: CommandLineToolsOptions) {
     Object.assign(this.options.aliases, this.options.aliases, CommandLineTools.kvvk(this.options.aliases));
     this.arguments = CommandLineTools.parseArguments<TypedArgs>(args);
     this.args = new Proxy(this.arguments as Object, {
@@ -45,9 +45,9 @@ export class CommandLineTools<TypedArgs> {
     console.log('');
     return false;
   }
-  static parseArguments<TypedArgs>(arr: string[]): TypedArgs {
+  static parseArguments<TypedArgs>(arr: Array<string>): TypedArgs {
     return <TypedArgs>arr.reduce(
-      (prevValue: { [key: string]: string | boolean }, valorActual: string, index: number, vector: string[]) => {
+      (prevValue: { [key: string]: string | boolean }, valorActual: string, index: number, vector: Array<string>) => {
         const isKey = vector[index].indexOf('-') === 0;
         if (isKey) {
           const next = arr[index + 1];

@@ -44,7 +44,7 @@ export function printObj(obj: any, tab: string = ''): string {
   return isArray ? str + ']' : str + '}';
 }
 
-export function walkSync(dir: string, filelist: string[] = []): string[] {
+export function walkSync(dir: string, filelist: Array<string> = []): Array<string> {
   if (dir[dir.length - 1] !== '/') {
     dir = dir.concat('/');
   }

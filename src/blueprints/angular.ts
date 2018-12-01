@@ -77,7 +77,7 @@ export function saveFile(options: SVG2TSCmd, blueprint: string) {
   };
 }
 
-export function generateIndexFile(options: SVG2TSCmd, files: SVG2TSOutputFile[]) {
+export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
   // generate an index.ts of svg's
   const indexFileExports = files
     .map((file: SVG2TSOutputFile) => {
