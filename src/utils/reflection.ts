@@ -33,15 +33,15 @@ export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile
   const { svg, css } = fileObj;
 
   return {
-    ...(width ? { width: width } : {}),
-    ...(height ? { height: height } : {}),
-    ...(viewBox && viewBox.width && viewBox.height ? { viewBox: viewBox } : {}),
-    path,
-    name,
-    svg: removeDefaultTemplateValues(svg).replace(singleQuoteRegExp, "\\'"),
     ...(css ? { css: removeDefaultTemplateValues(css) } : {}),
+    ...(JSON.stringify(contextDefaultsSvg) !== '{}' ? { contextDefaults } : {}),
     ...(contextInterface !== '{}' ? { contextInterface } : {}),
-    ...(JSON.stringify(contextDefaultsSvg) !== '{}' ? { contextDefaults } : {})
+    ...(height ? { height: height } : {}),
+    name,
+    path,
+    svg: removeDefaultTemplateValues(svg).replace(singleQuoteRegExp, "\\'"),
+    ...(viewBox && viewBox.width && viewBox.height ? { viewBox: viewBox } : {}),
+    ...(width ? { width: width } : {})
   };
 }
 
