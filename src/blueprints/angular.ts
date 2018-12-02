@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
 import { mkdirRecursiveSync } from '../utils/core';
+import { styleExtractRegExp } from '../utils/regexp';
 import { kebabCase, pascalCase } from '../utils/strings';
 import { compactSVG } from '../utils/svg';
 import { angularDynamicClassTemplate, angularDynamicModuleTemplate, svgIconClassTemplate } from './angular.templates';
@@ -16,7 +17,7 @@ function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
 }
 
 function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
-  const svgTemplate = `
+  let svgTemplate = `
       <fvg
         [attr.class]="\\'${kebabCase(options.module)}-\\'+context.uuid"
         [attr.width]="width"
@@ -29,9 +30,13 @@ function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     .replace(
       '@@@styles@@@',
       !svgFile.css ? '' : `<style>${svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}')}</style>`
-    )
-    .replace(/xlink:href=["']#(.*?)["']/g, `[attr.xlink:href]="getXlinkBase(\\\'$1\\\')"`)
-    .replace(/([\S]*?)=["']url\(#(.*?)\)["']/g, `[attr.$1]="getURLBase(\\\'$2\\\')"`);
+    );
+
+  svgTemplate = replaceIds(svgTemplate)
+    .replace(/xlink:href=["']#(.*?)(-{{context.uuid}})["']/g, `[attr.xlink:href]="getXlinkBase(\\\'$1\\\')"`)
+    .replace(/([\S]*?)=["']url\(#(.*?)(-{{context.uuid}})\)["']/g, `[attr.$1]="getURLBase(\\\'$2\\\')"`)
+    .replace(/:[ ]?url\((#.*?)(-{{context.uuid}})\)/g, `:{{getURLBase(\\\'$1\\\')}}`);
+
   return compactSVG(svgTemplate.replace(/\s/g, ' '))
     .replace('<fvg', '<svg')
     .replace('</fvg>', '</svg>');
@@ -94,7 +99,7 @@ export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputF
     .join('|')};`;
 
   const indexFile = indexFileExports.concat(indexFileType).concat(`
-    export function getSVGViewbox(viewBox: any): string {
+    export function getSVGViewBox(viewBox: any): string {
       return [viewBox.minx, viewBox.miny, viewBox.width, viewBox.height].join(' ');
     }
   `);
@@ -145,4 +150,47 @@ export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputF
       selector: `${kebabCase(options.module)}`
     })
   );
+}
+
+function replaceIds(source: string) {
+  const seed = '-{{context.uuid}}';
+  let ids: Array<string> = [];
+  const foundIds = source.match(/id="(.*?)"/g);
+  if (foundIds) {
+    ids = foundIds.map(m => {
+      const a = m.match(/id="(.*?)"/);
+      if (a) {
+        return a[1];
+      }
+      return '';
+    });
+  }
+  const prefixed = `svg2ts-`;
+  // content
+  let result = ids.reduce((acc, id) => {
+    acc = acc
+      // prefix document id's
+      .replace(new RegExp('["\']' + id + '["\']', 'g'), `"${prefixed}${id}${seed}"`)
+      // replace document id refs
+      .replace(new RegExp('["\']#' + id + '["\']', 'g'), `"#${prefixed}${id}${seed}"`)
+      // replace document id refs in url's
+      .replace(new RegExp('url\\(#' + id + '\\)', 'g'), `url(#${prefixed}${id}${seed})`);
+
+    return acc;
+  }, source);
+
+  // styles
+  const styles = result.match(styleExtractRegExp);
+  if (styles) {
+    result = styles.reduce((acc, styleDef) => {
+      const styleDefSeedIds = ids.reduce((acc, id) => {
+        acc = acc.replace(new RegExp('#' + id + '', 'g'), `#${prefixed}${id}${seed}`);
+        return acc;
+      }, styleDef);
+
+      return acc.replace(styleDef, styleDefSeedIds);
+    }, result);
+  }
+
+  return result;
 }
