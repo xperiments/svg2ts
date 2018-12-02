@@ -1,9 +1,15 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { SVG2TSCmd } from './types';
 import { banner } from './utils/banner';
 import { loadSvgFile, walkSync } from './utils/core';
 import { getSVG2TSOutputFile } from './utils/reflection';
 import { filterKnownDimensions, filterSvg, filterSvgContent } from './utils/svg';
+
+function generateDotFile(options: SVG2TSCmd) {
+  const filePath = `${options.output}${path.sep}${options.module}${path.sep}.svg2ts`;
+  fs.writeFileSync(filePath, '/* NOT REMOVE THIS FILE */', 'utf-8');
+}
 
 export function svg2ts(options: SVG2TSCmd) {
   const { input, output, blueprint } = options;
@@ -27,6 +33,8 @@ export function svg2ts(options: SVG2TSCmd) {
     tsMetadata.forEach(saveFile(options, blueprint));
 
     generateIndexFile(options, tsMetadata);
+
+    generateDotFile(options);
 
     console.log(`[svg2ts]\x1b[35m Processed \x1b[0m${svgFiles.length}\x1b[35m svg's into: \x1b[0m${output}\x1b[0m`);
   }
