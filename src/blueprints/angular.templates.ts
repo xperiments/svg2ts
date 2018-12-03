@@ -274,13 +274,14 @@ export class @{className}Component implements OnInit, AfterViewInit {
   }
 
   private _createStaticIcon() {
-    const svg =
-      this._replaceIds((this._icon.css
-        ? \\\`<style>\\\${this._icon.css.replace(
-            /.((?!})[\\\\S]+?){{uuid}}/g,
-            ''
-        )}</style>\\\`
-        : '') + \\\`<svg><g>\\\${this._resolveBasePath(this._icon.svg)}</g></svg>\\\`, @{className}Component.SEED++);
+    let svg = (this._icon.css
+      ? \\\`<style>\\\${this._icon.css.replace(
+        /.((?!})[\\\\S]+?){{uuid}}/g,
+        ''
+      )}</style>\\\`
+      : '') + \\\`<svg><g>\\\${this._icon.svg}</g></svg>\\\`;
+
+    svg = this._resolveBasePath(this._replaceIds(svg, OneSvgCoreComponent.SEED++));
 
     const inline = document.createElement('div');
     inline.innerHTML = svg;
@@ -289,28 +290,28 @@ export class @{className}Component implements OnInit, AfterViewInit {
   }
 
   private _replaceIds(source: string, seed: number) {
-    const seedPostFix = '-' + seed;
-    let ids: Array<string> = [];
     const foundIds = source.match(/id="(.*?)"/g);
-    if (foundIds) {
-      ids = foundIds.map(m => {
+    if (!foundIds) {
+      return source;
+    }
+    const seedPostFix = '-' + seed;
+    const ids: Array<string> = foundIds.map(m => {
         const a = m.match(/id="(.*?)"/);
         if (a) {
           return a[1];
         }
         return '';
       });
-    }
     const prefixed = \\\`svg2ts-\\\`;
     // content
     let result = ids.reduce((acc, id) => {
       acc = acc
-      // prefix document id's
-      .replace(new RegExp('["\\\\']' + id + '["\\\\']', 'g'), \\\`"\\\${prefixed}\\\${id}"\\\`)
-      // replace document id refs
-      .replace(new RegExp('["\\\\']#' + id + '["\\\\']', 'g'), \\\`"#\\\${prefixed}\\\${id}"\\\`)
-      // replace document id refs in url's
-      .replace(new RegExp('\\\\(#' + id + '\\\\)', 'g'), \\\`(#\\\${prefixed}\\\${id}")\\\`);
+        // prefix document id's
+        .replace(new RegExp('["\\\\']' + id + '["\\\\']', 'g'), \\\`"\\\${prefixed}\\\${id}\\\${seedPostFix}"\\\`)
+        // replace document id refs
+        .replace(new RegExp('["\\\\']#' + id + '["\\\\']', 'g'), \\\`"#\\\${prefixed}\\\${id}\\\${seedPostFix}"\\\`)
+        // replace document id refs in url's
+        .replace(new RegExp('url\\\\\\\\(#' + id + '\\\\\\\\)', 'g'), \\\`url(#\\\${prefixed}\\\${id}\\\${seedPostFix})\\\`);
 
       return acc;
     }, source);
@@ -335,9 +336,10 @@ export class @{className}Component implements OnInit, AfterViewInit {
     const baseUrl = window.location.href.replace(window.location.hash, '');
 
     return svg
-      .replace(/xlink:href=["']#(.*?)["']/g, \\\`xlink:href="\\\${baseUrl}#\\\$1"\\\`)
-      .replace(/url\\\\([']?#(.*?)[']?\\\\)/g, \\\`url(\\\${baseUrl}#\\\$1)\\\`);
+      .replace(/xlink:href=["']#(.*?)["']/g, \\\`xlink: href = "\\\${baseUrl}#$1"\\\`)
+      .replace(/url\\\\([']?#(.*?)[']?\\\\)/g, \\\`url(\\\${ baseUrl }#$1)\\\`);
   }
+
 }
 `,
   {
