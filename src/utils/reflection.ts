@@ -1,44 +1,56 @@
 import { SVG2TSContext, SVG2TSOutputFile, SVG2TSSourceFile } from '../types';
 import { dotObject } from './core';
-import { doubleQuoteRegExp, propertyValueKeyRegExp, singleQuoteRegExp } from './regexp';
-import { getMetadata, removeDefaultTemplateValues } from './svg';
+import { colonRegExp, doubleQuoteRegExp, propertyValueKeyRegExp, singleQuoteRegExp } from './regexp';
+import { getSvgMetadata, removeDefaultTemplateValues } from './svg';
 
 export function getContextDefinition(content: string) {
   const hasDynamicData = content.match(propertyValueKeyRegExp);
-  return hasDynamicData
-    ? hasDynamicData.reduce(contextDefinitionReducer, {
-        uuid: 'number'
-      })
+  return hasDynamicData && !(hasDynamicData.length === 1 && hasDynamicData[0] === '{{0|uuid}}')
+    ? hasDynamicData.reduce(contextDefinitionReducer, {})
     : {};
 }
 
-export function getContextDefaults(file: string): SVG2TSContext {
-  const hasDynamicData = file.match(propertyValueKeyRegExp);
+export function getContextDefaults(source: string): SVG2TSContext {
+  const hasDynamicData = source.match(propertyValueKeyRegExp);
   return hasDynamicData ? hasDynamicData.reduce(contextDefaultsReducer, {}) : {};
 }
 
 export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile {
-  const { width, height, viewBox } = getMetadata(fileObj);
+  const { width, height, viewBox } = getSvgMetadata(fileObj);
   const contextInterfaceSvg = getContextDefinition(fileObj.svg);
   const contextInterfaceCss = getContextDefinition(fileObj.css as string);
   const contextDefaultsSvg = getContextDefaults(fileObj.svg);
   const contextDefaultsCss = getContextDefaults(fileObj.css as string);
-  const contextInterface = JSON.stringify(Object.assign({}, contextInterfaceSvg, contextInterfaceCss))
+
+  const contextInterfaceObject = Object.assign({}, contextInterfaceSvg, contextInterfaceCss);
+  const contextInterface = JSON.stringify(contextInterfaceObject)
     .replace(doubleQuoteRegExp, '')
     .replace(singleQuoteRegExp, ';');
 
+  console.log('contextInterface', contextInterface);
+  const contextInterfaceWithUUID = JSON.stringify(
+    Object.assign({ uuid: 'number' }, contextInterfaceSvg, contextInterfaceCss)
+  )
+    .replace(doubleQuoteRegExp, '')
+    .replace(singleQuoteRegExp, ';');
+
+  delete contextDefaultsCss.uuid;
+  delete contextDefaultsSvg.uuid;
+
+  const isSimpleUUIDInterface =
+    Object.keys(contextInterfaceObject).length === 1 && contextInterfaceObject['uuid'] === 'number';
   const contextDefaults = Object.assign({}, contextDefaultsSvg, contextDefaultsCss);
 
-  const { path, name } = fileObj;
-  const { svg, css } = fileObj;
+  const { svg, css, svgHash, path, name } = fileObj;
 
   return {
     ...(css ? { css: removeDefaultTemplateValues(css) } : {}),
-    ...(JSON.stringify(contextDefaultsSvg) !== '{}' ? { contextDefaults } : {}),
-    ...(contextInterface !== '{}' ? { contextInterface } : {}),
+    ...(JSON.stringify(contextDefaults) !== '{}' ? { contextDefaults: { ...contextDefaults, uuid: 0 } } : {}),
+    ...(contextInterface !== '{}' && !isSimpleUUIDInterface ? { contextInterface: contextInterfaceWithUUID } : {}),
     ...(height ? { height: height } : {}),
     name,
     path,
+    svgHash,
     svg: removeDefaultTemplateValues(svg).replace(singleQuoteRegExp, "\\'"),
     ...(viewBox && viewBox.width && viewBox.height ? { viewBox: viewBox } : {}),
     ...(width ? { width: width } : {})
@@ -63,4 +75,8 @@ function contextDefinitionReducer(acc: any, match: string) {
     isNaN((<any>value) as number) ? 'string' : 'number'
   );
   return acc;
+}
+
+export function getTypescriptInterfaceDescriptor(obj: any) {
+  return obj && obj.toString().replace(colonRegExp, '?:');
 }

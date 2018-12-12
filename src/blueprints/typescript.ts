@@ -2,35 +2,60 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
 import { mkdirRecursiveSync, printObj } from '../utils/core';
+import { getTypescriptInterfaceDescriptor } from '../utils/reflection';
 import { pascalCase } from '../utils/strings';
-import { compactSVG, generateTSInterface } from '../utils/svg';
+import { compactSVG } from '../utils/svg';
 
-export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
-  const contextInterface = generateTSInterface(svgFile.contextInterface);
+/**
+ * Renders the final string output of the asset file
+ *
+ * @export
+ * @param {SVG2TSOutputFile} svgFile
+ * @param {SVG2TSCmd} options
+ * @returns {string}
+ */
+export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
+  const contextInterface = getTypescriptInterfaceDescriptor(svgFile.contextInterface);
 
   if (contextInterface) {
     delete svgFile.contextInterface;
   }
 
-  // prettier-ignore
-  const interfaceOutput =
-        contextInterface
-        ? `export interface ${pascalCase(svgFile.name)}Context ${contextInterface};`
-        : '';
-  // prettier-ignore
-  return `${interfaceOutput}export const ${pascalCase(svgFile.name)} = ${printObj(svgFile)};`;
+  const interfaceOutput = contextInterface
+    ? `export interface ${pascalCase(svgFile.name)}Context ${contextInterface};`
+    : '';
+
+  return `${interfaceOutput}export const ${pascalCase(svgFile.name)}: SVG2TSFile = ${printObj(svgFile)};`;
 }
 
-export function saveFile(options: SVG2TSCmd, blueprint: string) {
+/**
+ * Typescript blueprint saveFile method
+ *
+ * @export
+ * @param {SVG2TSCmd} options
+ * @returns
+ */
+export function saveFile(options: SVG2TSCmd) {
   return (svgFile: SVG2TSOutputFile) => {
     const filePath = options.output + path.sep + svgFile.name + '.ts';
+    // delete path from resulting object
     delete svgFile.path;
+    // compact svg file
     svgFile.svg = compactSVG(svgFile.svg);
+    // create file path route if not exist
     mkdirRecursiveSync(path.dirname(filePath));
+    // save final file
     fs.writeFileSync(filePath, render(svgFile, options));
   };
 }
 
+/**
+ * Generates the typescript blueprint index file
+ *
+ * @export
+ * @param {SVG2TSCmd} options
+ * @param {Array<SVG2TSOutputFile>} files
+ */
 export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
   const filePath = options.output + path.sep + 'index.ts';
   const indexFileContents = files
@@ -42,4 +67,26 @@ export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputF
     .join('\n');
   mkdirRecursiveSync(options.output + path.sep);
   fs.writeFileSync(filePath, indexFileContents);
+
+  fs.writeFileSync(
+    `${options.output}${path.sep}${options.module}types.d.ts`,
+    `interface SVG2TSDimensions {
+  height?: number | undefined;
+  minx?: number | undefined;
+  miny?: number | undefined;
+  width?: number | undefined;
+}
+
+interface SVG2TSFile {
+  contextDefaults?: { [key: string]: string | number } | undefined;
+  css?: string;
+  height?: string | undefined;
+  name: string;
+  svg: string;
+  svgHash: string;
+  viewBox?: SVG2TSDimensions | undefined;
+  width?: string | undefined;
+}
+    `
+  );
 }

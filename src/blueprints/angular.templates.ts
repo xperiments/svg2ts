@@ -6,8 +6,7 @@ export interface AngularDynamicClassTemplate {
 }
 
 export const angularDynamicClassTemplate = tsc<AngularDynamicClassTemplate>(
-  `
-import {
+  `import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
@@ -44,12 +43,14 @@ export class @{className}Component implements OnInit {
 
   constructor(private _ref: ChangeDetectorRef) {}
 
+  // TODO Move this to a Pipe
   public getURLBase(value) {
-    return \\\`url('\\\${this.baseUrl}#\\\${value}-\\\${this.context.uuid}')\\\`;
+    return \\\`url('\\\${this.baseUrl}\\\${value}')\\\`;
   }
 
+  // TODO Move this to a Pipe
   public getXlinkBase(value) {
-    return \\\`\\\${ this.baseUrl }#\\\${ value }-\\\${this.context.uuid}\\\`;
+    return \\\`\\\${this.baseUrl}\\\${value}\\\`;
   }
 
   public ngOnInit() {
@@ -58,11 +59,7 @@ export class @{className}Component implements OnInit {
   }
 
   public updateContext(ctx: any) {
-    this._context = Object.assign(
-      {},
-      this._context ? this._context : @{className}.contextDefaults,
-      ctx
-    );
+    this._context = Object.assign({}, this._context ? this._context : @{className}.contextDefaults, ctx);
     this._ref.markForCheck();
   }
 }
@@ -76,8 +73,7 @@ export interface AngularDynamicModuleTemplate {
 }
 
 export const angularDynamicModuleTemplate = tsc<AngularDynamicModuleTemplate>(
-  `
-import { NgModule } from '@angular/core';
+  `import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   @{
@@ -119,23 +115,6 @@ export interface SvgIconClassTemplate {
 }
 export const svgIconClassTemplate = tsc<SvgIconClassTemplate>(
   `
-export interface SVG2TSDimensions {
-  height?: number | undefined;
-  minx?: number | undefined;
-  miny?: number | undefined;
-  width?: number | undefined;
-}
-
-export interface SVG2TSFile {
-  contextDefaults?: { [key: string]: string | number } | undefined;
-  css?: string;
-  height?: string | undefined;
-  name: string;
-  svg: string;
-  viewBox?: SVG2TSDimensions | undefined;
-  width?: string | undefined;
-}
-
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -281,55 +260,15 @@ export class @{className}Component implements OnInit, AfterViewInit {
       )}</style>\\\`
       : '') + \\\`<svg><g>\\\${this._icon.svg}</g></svg>\\\`;
 
-    svg = this._resolveBasePath(this._replaceIds(svg, OneSvgCoreComponent.SEED++));
+    const currentSeed = OneSvgCoreComponent.SEED++;
+    svg = svg.replace(/{{uuid}}/g, String(currentSeed));
+    svg = this._resolveBasePath(svg);
 
     const inline = document.createElement('div');
     inline.innerHTML = svg;
+    (inline.firstChild as SVGElement).classList.add(this._icon.svgHash + '-' + currentSeed);
 
     this._elementRef.nativeElement.querySelector('svg').appendChild(inline.firstChild);
-  }
-
-  private _replaceIds(source: string, seed: number) {
-    const foundIds = source.match(/id="(.*?)"/g);
-    if (!foundIds) {
-      return source;
-    }
-    const seedPostFix = '-' + seed;
-    const ids: Array<string> = foundIds.map(m => {
-        const a = m.match(/id="(.*?)"/);
-        if (a) {
-          return a[1];
-        }
-        return '';
-      });
-    const prefixed = \\\`svg2ts-\\\`;
-    // content
-    let result = ids.reduce((acc, id) => {
-      acc = acc
-        // prefix document id's
-        .replace(new RegExp('["\\\\']' + id + '["\\\\']', 'g'), \\\`"\\\${prefixed}\\\${id}\\\${seedPostFix}"\\\`)
-        // replace document id refs
-        .replace(new RegExp('["\\\\']#' + id + '["\\\\']', 'g'), \\\`"#\\\${prefixed}\\\${id}\\\${seedPostFix}"\\\`)
-        // replace document id refs in url's
-        .replace(new RegExp('url\\\\\\\\(#' + id + '\\\\\\\\)', 'g'), \\\`url(#\\\${prefixed}\\\${id}\\\${seedPostFix})\\\`);
-
-      return acc;
-    }, source);
-
-    // styles
-    const styles = result.match(/(<style(.+?)?>)([\\\\s\\\\S]+?)<\\\\/style>/g);
-    if (styles) {
-      result = styles.reduce((acc, styleDef) => {
-        const styleDefSeedIds = ids.reduce((styleDefSeedAcc, id) => {
-          styleDefSeedAcc = styleDefSeedAcc.replace(new RegExp('#' + id + '', 'g'), \\\`#\\\${prefixed}\\\${id}\\\${seedPostFix}\\\`);
-          return styleDefSeedAcc;
-        }, styleDef);
-
-        return acc.replace(styleDef, styleDefSeedIds);
-      }, result);
-    }
-
-    return result;
   }
 
   private _resolveBasePath(svg: string) {

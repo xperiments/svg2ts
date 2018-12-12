@@ -6,6 +6,11 @@ import { CommandLineTools } from './utils/cmd';
 
 const packageJson = require('../package.json');
 
+/**
+ * Main command line entry point
+ *
+ * @returns
+ */
 function main() {
   const args = process.argv.slice(2);
 
@@ -22,11 +27,12 @@ function main() {
       blueprint: "blueprint to use 'typescript'[default] 'angular' |typescript",
       module: 'Module name for angular blueprint |svg-to-ts'
     },
-    // prettier-ignore
     banner: banner,
     version: packageJson.version
   };
+
   const cmd = new CommandLineTools<SVG2TSCmd>('svg2ts', args, commandLineToolsOptions);
+
   if (!cmd.args.input || !cmd.args.output) {
     return cmd.help();
   } else {
@@ -35,4 +41,6 @@ function main() {
     svg2ts(cmd.args);
   }
 }
+
+// run main process
 main();

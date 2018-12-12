@@ -1,6 +1,6 @@
 {
   "name": "svg2ts",
-  "version": "0.2.94",
+  "version": "0.2.95",
   "description": "",
   "main": "lib/index",
   "bin": {
@@ -29,6 +29,7 @@
   },
   "types": "lib/index",
   "dependencies": {
+    "crypto": "^1.0.1",
     "postcss": "^6.0.14",
     "postcss-prefix-selector": "^1.6.0"
   }

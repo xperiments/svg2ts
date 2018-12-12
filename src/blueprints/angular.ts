@@ -8,23 +8,37 @@ import { compactSVG } from '../utils/svg';
 import { angularDynamicClassTemplate, angularDynamicModuleTemplate, svgIconClassTemplate } from './angular.templates';
 import { render as renderTS } from './typescript';
 
+/**
+ * Renders the final string output of the asset file
+ *
+ * @export
+ * @param {SVG2TSOutputFile} svgFile
+ * @param {SVG2TSCmd} options
+ * @returns {string}
+ */
 function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
+  // delete the contextInterface object from the file
   delete svgFile.contextInterface;
+
+  // generate angular component for file
   return angularDynamicClassTemplate({
     className: pascalCase(svgFile.name),
     selector: `${kebabCase(options.module)}-${kebabCase(svgFile.name)}`
   });
 }
 
-function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
+function getDynamicSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
+  // start with the fake "svg" definition
   let svgTemplate = `
       <fvg
-        [attr.class]="\\'${kebabCase(options.module)}-\\'+context.uuid"
+        [attr.class]="\\'${svgFile.svgHash}-\\'+context.uuid"
         [attr.width]="width"
         [attr.height]="height"
         [attr.viewBox]="viewBox">
         @@@styles@@@${svgFile.svg}
       </fvg>`
+    // replace all svg custom variables
+    // with the relatted context mapping
     .replace(/ (\S+?)=['"]{{(.+?)}}['"]/g, ` [attr.$1]="context.$2"`)
     .replace(/{{(.+?)}}/g, '{{context.$1}}')
     .replace(
@@ -32,9 +46,20 @@ function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
       !svgFile.css ? '' : `<style>${svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}')}</style>`
     );
 
-  svgTemplate = replaceIds(svgTemplate)
+  svgTemplate = replaceIds(svgTemplate, svgFile.svgHash + '-')
+    // replace id="xxx-{{context.uuid}}-yyy"
+    // width [attr.id]="'xxx-'+context.uuid+'-yyy'"
+    .replace(
+      / (\S+?)=['"]([a-zA-Z0-9-_@$:ᗢ#\(\)\.]+?){{(.+?)}}([a-zA-Z0-9-_@$:ᗢ#\(\)\.]+?)['"]/g,
+      `  [attr.$1]="\\'$2\\'+$3+\\'$4\\'"`
+    )
+    // replace all "composed" urls with getURLBase method
+    .replace(/([\S]*?)="\\'url\((.*?)\)\\'"/g, `$1="getURLBase(\\\'$2\\\')"`)
+    // replace all xlinks to computed attribute
     .replace(/xlink:href=["']#(.*?)(-{{context.uuid}})["']/g, `[attr.xlink:href]="getXlinkBase(\\\'$1\\\')"`)
-    .replace(/([\S]*?)=["']url\(#(.*?)(-{{context.uuid}})\)["']/g, `[attr.$1]="getURLBase(\\\'$2\\\')"`)
+    // replace all "id" url references with getURLBase
+    .replace(/([\S]*?)=["']url\(#(.*?)(-{{context.uuid}})\)["']/g, `[attr.$1]="getURLBase('$2')"`)
+    // replace all css url references with getURLBase
     .replace(/:[ ]?url\((#.*?)(-{{context.uuid}})\)/g, `:{{getURLBase(\\\'$1\\\')}}`);
 
   return compactSVG(svgTemplate.replace(/\s/g, ' '))
@@ -42,46 +67,90 @@ function getSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     .replace('</fvg>', '</svg>');
 }
 
-function getStaticSvgAOT(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
-  const svgTemplate = `
-      <fvg>@@@styles@@@${svgFile.svg}</fvg>`
-    .replace(/ (\S+?)=['"]{{(.+?)}}['"]/g, ` [attr.$1]="context.$2"`)
-    .replace(/{{(.+?)}}/g, '{{context.$1}}')
-    .replace(
-      '@@@styles@@@',
-      !svgFile.css ? '' : `<style>${svgFile.css.replace(/{{(.+?)}}/g, '{{context.$1}}')}</style>`
-    );
-  return compactSVG(svgTemplate.replace(/\s/g, ' '))
-    .replace('<fvg>', '')
-    .replace('</fvg>', '');
+function getStaticSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
+  // if css replace the {{uuid}} string coming from postcss
+  // with a unique variable one based on the svg file name
+  // and a "reemplazable" -svg2tsIndex
+  // .replace(/\{\{uuid\}\}/g, `-®®®`) +
+  const css = svgFile.css ? '<style>' + svgFile.css + '</style>' : '';
+
+  const svgTemplate = `<fvg>${css}${svgFile.svg}</fvg>`;
+
+  // prefix all id's with svg2ts- and postfix it
+  // with a "reemplazable" -svg2tsIndex
+  return replaceIds(
+    compactSVG(svgTemplate.replace(/\s/g, ' '))
+      .replace('<fvg>', '')
+      .replace('</fvg>', ''),
+    svgFile.svgHash + '-',
+    '{{uuid}}-'
+  );
 }
 
-export function saveFile(options: SVG2TSCmd, blueprint: string) {
+/**
+ * Angular blueprint saveFile method
+ *
+ * @export
+ * @param {SVG2TSCmd} options
+ * @returns
+ */
+export function saveFile(options: SVG2TSCmd) {
   const { output, module } = options;
   return (svgFile: SVG2TSOutputFile) => {
-    // TS
+    // Typescript Blueprint
+
+    // determine file path
     const filePath = `${output}${path.sep}${module}${path.sep}assets${path.sep}${svgFile.name}.ts`;
-    const destBase = path.dirname(filePath);
-    if (!fs.existsSync(destBase)) {
-      mkdirRecursiveSync(destBase);
+
+    // create directory path if not exist
+    const filePathDirectory = path.dirname(filePath);
+    if (!fs.existsSync(filePathDirectory)) {
+      mkdirRecursiveSync(filePathDirectory);
     }
+
+    // delete path value from final svg output file
     delete svgFile.path;
-    svgFile.svg = svgFile.contextDefaults ? getSvgAOT(svgFile, options) : getStaticSvgAOT(svgFile, options);
+
+    // determine what kind of processing the original
+    // svg source needs.
+    // this is determined by the "static" or "dynamic"
+    // nature of the svg source
+
+    svgFile.svg = svgFile.contextDefaults ? getDynamicSvg(svgFile, options) : getStaticSvg(svgFile, options);
+
+    // delete css value from final svg output file
     delete svgFile.css;
 
+    // save typescript asset file to disc
     fs.writeFileSync(filePath, renderTS(svgFile, options));
 
+    // if the final svg is a "dynamic" one
+    // also generate the angular corresponding component
     if (svgFile.contextDefaults) {
-      const ngFilePath = `${output}${path.sep}${module}${path.sep}components${path.sep}${svgFile.name}.component.ts`;
-      const destBase = path.dirname(ngFilePath);
-      if (!fs.existsSync(destBase)) {
-        mkdirRecursiveSync(destBase);
+      // determine angular component file path
+      const angularComponentFilePath = `${output}${path.sep}${module}${path.sep}components${path.sep}${
+        svgFile.name
+      }.component.ts`;
+
+      // create directory path if not exist
+      const angularComponentFilePathDirectory = path.dirname(angularComponentFilePath);
+      if (!fs.existsSync(angularComponentFilePathDirectory)) {
+        mkdirRecursiveSync(angularComponentFilePathDirectory);
       }
-      fs.writeFileSync(ngFilePath, render(svgFile, options));
+
+      // write angular component to disc
+      fs.writeFileSync(angularComponentFilePath, render(svgFile, options));
     }
   };
 }
 
+/**
+ * Generates the angular blueprint index file
+ *
+ * @export
+ * @param {SVG2TSCmd} options
+ * @param {Array<SVG2TSOutputFile>} files
+ */
 export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
   // generate an index.ts of svg's
   const indexFileExports = files
@@ -150,10 +219,32 @@ export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputF
       selector: `${kebabCase(options.module)}`
     })
   );
+
+  // generate types file
+  fs.writeFileSync(
+    `${options.output}${path.sep}${options.module}${path.sep}types.d.ts`,
+    `interface SVG2TSDimensions {
+  height?: number | undefined;
+  minx?: number | undefined;
+  miny?: number | undefined;
+  width?: number | undefined;
 }
 
-function replaceIds(source: string) {
-  const seed = '-{{context.uuid}}';
+interface SVG2TSFile {
+  contextDefaults?: { [key: string]: string | number } | undefined;
+  css?: string;
+  height?: string | undefined;
+  name: string;
+  svg: string;
+  svgHash: string;
+  viewBox?: SVG2TSDimensions | undefined;
+  width?: string | undefined;
+}
+    `
+  );
+}
+
+function replaceIds(source: string, prefix: string = 'svg2ts-', postFix = '{{context.uuid}}-') {
   let ids: Array<string> = [];
   const foundIds = source.match(/id="(.*?)"/g);
   if (foundIds) {
@@ -165,16 +256,16 @@ function replaceIds(source: string) {
       return '';
     });
   }
-  const prefixed = `svg2ts-`;
+
   // content
   let result = ids.reduce((acc, id) => {
     acc = acc
       // prefix document id's
-      .replace(new RegExp('["\']' + id + '["\']', 'g'), `"${prefixed}${id}${seed}"`)
+      .replace(new RegExp('["\']' + id + '["\']', 'g'), `"${prefix}${postFix}${id}"`)
       // replace document id refs
-      .replace(new RegExp('["\']#' + id + '["\']', 'g'), `"#${prefixed}${id}${seed}"`)
+      .replace(new RegExp('["\']#' + id + '["\']', 'g'), `"#${prefix}${postFix}${id}"`)
       // replace document id refs in url's
-      .replace(new RegExp('url\\(#' + id + '\\)', 'g'), `url(#${prefixed}${id}${seed})`);
+      .replace(new RegExp('url\\(#' + id + '\\)', 'g'), `url(#${prefix}${postFix}${id})`);
 
     return acc;
   }, source);
@@ -184,7 +275,7 @@ function replaceIds(source: string) {
   if (styles) {
     result = styles.reduce((acc, styleDef) => {
       const styleDefSeedIds = ids.reduce((acc, id) => {
-        acc = acc.replace(new RegExp('#' + id + '', 'g'), `#${prefixed}${id}${seed}`);
+        acc = acc.replace(new RegExp('#' + id + '', 'g'), `#${prefix}${postFix}${id}`);
         return acc;
       }, styleDef);
 

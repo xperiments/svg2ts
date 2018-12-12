@@ -25,6 +25,7 @@ export interface SVG2TSOutputFile extends SVG2TSDimensions, SVG2TSSourceFile {
 export interface SVG2TSSourceFile {
   name: string;
   svg: string;
+  svgHash?: string;
   path: string;
   css?: string;
 }

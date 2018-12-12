@@ -1,18 +1,23 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { SVG2TSCmd, SVG2TSSourceFile } from '../types';
+import { SVG2TSCmd, SVG2TSOutputFile, SVG2TSSourceFile } from '../types';
+import { HashID } from './hash-id';
 import { lineBreaksRegExp } from './regexp';
-import { extractStyles, removeStyles } from './svg';
+import { extractSvgInlineStyles, removeSvgInlineStyles } from './svg';
+
+const burnedHashes: Array<string> = [];
 
 export function loadSvgFile(options: SVG2TSCmd) {
   return (fileName: string): SVG2TSSourceFile => {
     const svg = fs.readFileSync(fileName, 'utf8').replace(lineBreaksRegExp, '');
-
+    const svgHash = `ᗢ${HashID.generateUnique(burnedHashes)}`;
+    burnedHashes.push(svgHash);
     return {
       path: fileName,
       name: path.basename(fileName).replace('.svg', ''),
-      svg: removeStyles(svg),
-      css: extractStyles(svg, options)
+      svg: removeSvgInlineStyles(svg),
+      svgHash,
+      css: extractSvgInlineStyles(svg, svgHash)
     };
   };
 }
@@ -92,4 +97,22 @@ export function tsc<T>(template: string, context: T): (context: T) => string {
   }
   const fnTemplate = 'const {' + keys + '}=context; return`' + template + '`';
   return new Function('context', fnTemplate) as (context: T) => string;
+}
+
+export function generateDotFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
+  const filePath = `${options.output}${path.sep}${options.module}${path.sep}.svg2ts`;
+
+  fs.writeFileSync(filePath, JSON.stringify(files, null, 2), 'utf-8');
+}
+
+export function hashCode(s: string) {
+  var h = 0,
+    l = s.length,
+    i = 0;
+  if (l > 0) {
+    while (i < l) {
+      h = ((h << 5) - h + s.charCodeAt(i++)) | 0;
+    }
+  }
+  return h;
 }

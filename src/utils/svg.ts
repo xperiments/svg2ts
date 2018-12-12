@@ -3,7 +3,6 @@ import * as postcss from 'postcss';
 import * as prefixer from 'postcss-prefix-selector';
 import { SVG2TSCmd, SVG2TSDimensions, SVG2TSSourceFile, SVG2TSSVGMetadata } from '../types';
 import {
-  colonRegExp,
   propertyBeginRegExp,
   propertyBeginToggleRegExp,
   propertyEndRegExp,
@@ -12,7 +11,6 @@ import {
   singleQuoteRegExp,
   styleExtractRegExp,
   styleTagRegExp,
-  svgAttributeRegExp,
   svgHeightRegExp,
   svgIsSVG,
   svgRootRegExp,
@@ -21,47 +19,92 @@ import {
   svgViewBoxRegExp,
   svgWidthRegExp
 } from './regexp';
-import { kebabCase } from './strings';
 
+var crypto = require('crypto');
+
+/**
+ * Determines if the provided buffer string is an svg
+ *
+ * @export
+ * @param {string} buffer
+ * @returns
+ */
 export function isSVG(buffer: string) {
   return svgIsSVG.test(buffer);
 }
 
-export function parseViewbox(viewBox: string): SVG2TSDimensions {
+/**
+ * Parses a view box string 'x y width height' into an object
+ *
+ * @export
+ * @param {string} viewBox
+ * @returns {SVG2TSDimensions}
+ */
+export function parseViewBox(viewBox: string): SVG2TSDimensions {
   const [minx, miny, width, height] = viewBox.split(' ').map(_ => {
     return parseInt(_, 10);
   });
   return { minx, miny, width, height };
 }
 
-export function parseAttributes(root: any): SVG2TSSVGMetadata {
+/**
+ * Returns an object containing the values
+ * of the with / height / viewBox svg attributes
+ *
+ * @export
+ * @param {*} root
+ * @returns {SVG2TSSVGMetadata}
+ */
+export function parseSvgAttributes(root: string): SVG2TSSVGMetadata {
   const width = root.match(svgWidthRegExp);
   const height = root.match(svgHeightRegExp);
   const viewBox = root.match(svgViewBoxRegExp);
   return {
     ...(width ? { width: width[2] } : {}),
     ...(height ? { height: height[2] } : {}),
-    ...(viewBox ? { viewBox: parseViewbox(viewBox[2]) } : {})
+    ...(viewBox ? { viewBox: parseViewBox(viewBox[2]) } : {})
   };
 }
 
-export function getMetadata(svgFile: SVG2TSSourceFile) {
-  const buffer = svgFile.svg;
-  const root = buffer.match(svgRootRegExp);
+/**
+ * Retuns the svgFile SVG2TSSVGMetadata
+ *
+ * @export
+ * @param {SVG2TSSourceFile} svgFile
+ * @returns {SVG2TSSVGMetadata}
+ */
+export function getSvgMetadata(svgFile: SVG2TSSourceFile): SVG2TSSVGMetadata {
+  const root = svgFile.svg.match(svgRootRegExp);
+
+  // is valid svg?
   if (root) {
-    const attrs = parseAttributes(root[0]);
-    if (attrs.width && attrs.height) {
-      return getDimensions(attrs);
+    const svgAttributes = parseSvgAttributes(root[0]);
+    // if svg width & height attributes are present
+    // compute dimensions from the attributes
+    if (svgAttributes.width && svgAttributes.height) {
+      return getSvgDimensions(svgAttributes);
     }
-    if (attrs.viewBox) {
-      return getViewBoxDimensions(attrs);
+
+    // if not attributes are present get the dimensions from
+    // the viewVox attribute
+    if (svgAttributes.viewBox) {
+      return getSvgViewBoxDimensions(svgAttributes);
     }
+
+    console.log(`[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`);
   }
   console.log(`[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`);
   return {};
 }
 
-export function getDimensions(attrs: any): SVG2TSSVGMetadata {
+/**
+ * Returns an SVG2TSSVGMetadata if the width / height attributes are present
+ *
+ * @export
+ * @param {{ [key: string]: any }} attrs
+ * @returns {SVG2TSSVGMetadata}
+ */
+export function getSvgDimensions(attrs: { [key: string]: any }): SVG2TSSVGMetadata {
   const { width, height } = attrs;
   return {
     width,
@@ -70,31 +113,58 @@ export function getDimensions(attrs: any): SVG2TSSVGMetadata {
   };
 }
 
-export function getViewBoxDimensions(attrs: any): SVG2TSSVGMetadata {
+/**
+ * Returns an SVG2TSSVGMetadata if viewBox is present in attributes
+ *
+ * @export
+ * @param {*} attrs
+ * @returns {SVG2TSSVGMetadata}
+ */
+export function getSvgViewBoxDimensions(attrs: { [key: string]: any }): SVG2TSSVGMetadata {
   const ratio = attrs.viewBox.width / attrs.viewBox.height;
   if (attrs.width) {
     return {
-      width: attrs.width,
       height: Math.floor(attrs.width / ratio),
-      ...(attrs.viewBox ? { viewBox: attrs.viewBox } : {})
+      ...(attrs.viewBox ? { viewBox: attrs.viewBox } : {}),
+      width: attrs.width
     };
   }
   if (attrs.height) {
     return {
-      width: Math.floor(attrs.height * ratio),
       height: attrs.height,
-      ...(attrs.viewBox ? { viewBox: attrs.viewBox } : {})
+      ...(attrs.viewBox ? { viewBox: attrs.viewBox } : {}),
+      width: Math.floor(attrs.height * ratio)
     };
   }
 
-  return { width: '100%', height: '100%', viewBox: { width: attrs.viewBox.width, height: attrs.viewBox.height } };
+  return {
+    height: '100%',
+    viewBox: { width: attrs.viewBox.width, height: attrs.viewBox.height },
+    width: '100%'
+  };
 }
 
-export function getInlineStyles(svg: string): string {
+/**
+ * Returns a string containing the svg inline styles
+ *
+ * @export
+ * @param {string} svg
+ * @returns {string}
+ */
+export function getSvgInlineStyles(svg: string): string {
+  // matches all <style ...>(content)</style>
   const matches = svg.match(styleExtractRegExp);
+  // remove <style> | </style> tag
   return matches ? matches.join('').replace(styleTagRegExp, '') : '';
 }
 
+/**
+ * Minifies css string
+ *
+ * @export
+ * @param {string} css
+ * @returns {string}
+ */
 export function compactCSS(css: string): string {
   // https://codepen.io/arlinadesign/pen/KVNBKK
   const c = /@(media|-w|-m|-o|keyframes|page)(.*?)\{([\s\S]+?)?\}\}/gi,
@@ -116,6 +186,13 @@ export function compactCSS(css: string): string {
   return css;
 }
 
+/**
+ * Minifies SVG
+ *
+ * @export
+ * @param {string} source
+ * @returns {string}
+ */
 export function compactSVG(source: string): string {
   source = source
     .replace(/<svg.[^>]*>/g, '')
@@ -133,51 +210,104 @@ export function compactSVG(source: string): string {
   return source.trim();
 }
 
+/**
+ * Removes the custom svg variables in format
+ * {{value|variable}} from the provided string
+ * and returns it
+ *
+ * @export
+ * @param {string} source
+ * @returns {string}
+ */
 export function removeDefaultTemplateValues(source: string): string {
   return source.replace(propertyValueKeyRegExp, '{{$2}}');
 }
 
-export function extractStyles(svg: string, options: SVG2TSCmd): string {
-  const cssmin = compactCSS(
-    getInlineStyles(svg)
+/**
+ * Provides a scoped & minified Css
+ * from the Svg inline styles
+ *
+ * @export
+ * @param {string} svg
+ * @param {SVG2TSCmd} options
+ * @returns {string}
+ */
+export function extractSvgInlineStyles(svg: string, svgHash: string): string {
+  const minifiedCss = compactCSS(
+    // get inline svg styles
+    getSvgInlineStyles(svg)
+      // escape single quotes
       .replace(singleQuoteRegExp, "\\'")
-      .replace(svgAttributeRegExp, ` [attr.$1]="context.$2"`)
+    // .replace(svgAttributeRegExp, ` [attr.$1]="context.$2"`)
   )
+    // obscure {{
     .replace(propertyBeginRegExp, '_oo_')
+    // obscure }}
     .replace(propertyEndRegExp, '_OO_');
 
-  return postcss()
-    .use(
-      prefixer({
-        prefix: `.${kebabCase(options.module)}-_oo_0|uuid_OO_`
-      })
-    )
-    .process(cssmin)
-    .css.replace(propertyBeginToggleRegExp, '{{')
-    .replace(propertyEndToggleRegExp, '}}');
+  return (
+    postcss()
+      .use(prefixer({ prefix: `.${svgHash}-_oo_0|uuid_OO_` }))
+      .process(minifiedCss)
+      .css // de-obscure {{
+      .replace(propertyBeginToggleRegExp, '{{')
+      // de obscure }}
+      .replace(propertyEndToggleRegExp, '}}')
+  );
 }
 
-export function removeStyles(svg: string): string {
+/**
+ * Removes inline style tags from the string
+ *
+ * @export
+ * @param {string} svg
+ * @returns {string}
+ */
+export function removeSvgInlineStyles(svg: string): string {
   return svg.replace(svgStyleRegExp, '');
 }
 
-export function removeScripts(svg: string): string {
+/**
+ * Removes inline script tags from the string
+ *
+ * @export
+ * @param {string} svg
+ * @returns {string}
+ */
+export function removeSvgInlineScripts(svg: string): string {
   return svg.replace(svgScriptRegExp, '');
 }
 
-export function generateTSInterface(obj: any) {
-  return obj && obj.toString().replace(colonRegExp, '?:');
-}
-
+/**
+ * Filters svg files by extension
+ *
+ * @export
+ * @param {string} file
+ * @returns
+ */
 export function filterSvg(file: string) {
   return file.includes('svg') && path.extname(file) === '.svg';
 }
 
+/**
+ * Filters svg files by content
+ *
+ * @export
+ * @param {SVG2TSSourceFile} svgFilePath
+ * @returns {boolean}
+ */
 export function filterSvgContent(svgFilePath: SVG2TSSourceFile): boolean {
   return isSVG(svgFilePath.svg);
 }
 
+/**
+ * Filter svg files that has valid dimensions
+ *
+ * @export
+ * @param {SVG2TSSourceFile} fileObj
+ * @returns
+ */
 export function filterKnownDimensions(fileObj: SVG2TSSourceFile) {
-  const { width, height, viewBox } = getMetadata(fileObj);
+  const { width, height, viewBox } = getSvgMetadata(fileObj);
   return (width && height) || (viewBox && viewBox.width && viewBox.height);
 }
