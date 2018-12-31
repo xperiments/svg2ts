@@ -4,6 +4,7 @@ import { SVG2TSCmd, SVG2TSOutputFile, SVG2TSSourceFile } from '../types';
 import { HashID } from './hash-id';
 import { lineBreaksRegExp } from './regexp';
 import { extractSvgInlineStyles, removeSvgInlineStyles } from './svg';
+import { pascalCase } from './strings';
 
 const burnedHashes: Array<string> = [];
 
@@ -102,7 +103,9 @@ export function tsc<T>(template: string, context: T): (context: T) => string {
 export function generateDotFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
   const filePath = `${options.output}${path.sep}${options.module}${path.sep}.svg2ts`;
 
-  fs.writeFileSync(filePath, JSON.stringify(files, null, 2), 'utf-8');
+  const exports = files.map(file => file.name);
+
+  fs.writeFileSync(filePath, JSON.stringify({ exports, files }, null, 2), 'utf-8');
 }
 
 export function hashCode(s: string) {

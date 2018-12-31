@@ -27,7 +27,6 @@ export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile
     .replace(doubleQuoteRegExp, '')
     .replace(singleQuoteRegExp, ';');
 
-  console.log('contextInterface', contextInterface);
   const contextInterfaceWithUUID = JSON.stringify(
     Object.assign({ uuid: 'number' }, contextInterfaceSvg, contextInterfaceCss)
   )

@@ -5,7 +5,12 @@ import { mkdirRecursiveSync } from '../utils/core';
 import { styleExtractRegExp } from '../utils/regexp';
 import { kebabCase, pascalCase } from '../utils/strings';
 import { compactSVG } from '../utils/svg';
-import { angularDynamicClassTemplate, angularDynamicModuleTemplate, svgIconClassTemplate } from './angular.templates';
+import {
+  angularDynamicClassTemplate,
+  angularDynamicModuleTemplate,
+  svgIconClassTemplate,
+  assetsTemplate
+} from './angular.templates';
 import { render as renderTS } from './typescript';
 
 /**
@@ -213,11 +218,16 @@ export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputF
         component: pascalCase(component.name),
         name: component.name
       })),
-      moduleName,
+      moduleName: options.module,
       className: `${pascalCase(options.module)}`,
       pascalCase: pascalCase,
       selector: `${kebabCase(options.module)}`
     })
+  );
+
+  fs.writeFileSync(
+    `${options.output}${path.sep}${options.module}${path.sep}components${path.sep}assets.ts`,
+    assetsTemplate({ assets: files.map(file => pascalCase(file.name)) })
   );
 
   // generate types file

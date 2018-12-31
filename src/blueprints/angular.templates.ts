@@ -105,6 +105,22 @@ export class @{moduleName}Module { }
   }
 );
 
+export const assetsTemplate = tsc<any>(
+  `import {
+  @{assets.join(\',\\n  \')}
+} from '../assets';
+
+export const assetsMap = {
+  @{
+    assets.map((asset)=>{
+        return \`[\${asset}.name]: \${asset}\`;
+    }).join(',\\n  ')
+  }
+};
+`,
+  { assets: [] }
+);
+
 export interface SvgIconClassTemplate {
   moduleName: string;
   className: string;
@@ -128,9 +144,7 @@ import {
   ViewContainerRef,
 } from '@angular/core';
 
-import {
-  @{assets.join(\',\\n  \')}
-} from '../assets';
+import { assetsMap } from './\assets';
 
 @{
     components.map((component)=>{
@@ -138,18 +152,16 @@ import {
     }).join('\\n')
 }
 
-const assetsMap = {
-@{
-    assets.map((asset)=>{
-        return \`[\${asset}.name]: \${asset}\`;
-    }).join(',\\n  ')
-}
-};
+import {
+  @{
+    components.map(component=>pascalCase(component.name)).join(',')
+  }
+} from '../assets';
 
 const componentsMap = {
 @{
     components.map((component)=>{
-        return \`[\${component.component}.name]: \${component.component}Component\`;
+        return \`  [\${component.component}.name]: \${component.component}Component\`;
     }).join(',\\n  ')
 }
 };
