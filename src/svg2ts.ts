@@ -47,7 +47,7 @@ export function svg2ts(options: SVG2TSCmd) {
     // generate a barrel index file of the assets
     generateIndexFile(options, outputSvgFiles);
 
-    // generate the library .svg2ts
+    // generate the library module.svgts
     generateDotFile(options, outputSvgFiles);
 
     console.log(
