@@ -118,3 +118,28 @@ export function hashCode(s: string) {
   }
   return h;
 }
+
+export function deepMerge<Structure extends { [key: string]: any }>(target: Structure, source: Structure): Structure {
+  // tslint:disable-next-line:prefer-object-spread
+  const output: any = Object.assign({}, target);
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach((key: any) => {
+      const sourceKey = source[key];
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          Object.assign(output, { [key]: source[key] });
+        } else {
+          output[key] = deepMerge(target[key], source[key]);
+        }
+      } else {
+        Object.assign(output, { [key]: source[key] });
+      }
+    });
+  }
+
+  return output;
+}
+
+export function isObject(item: any): boolean {
+  return item && typeof item === 'object' && !Array.isArray(item);
+}
