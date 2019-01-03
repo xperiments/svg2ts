@@ -1,5 +1,5 @@
 import { SVG2TSContext, SVG2TSOutputFile, SVG2TSSourceFile } from '../types';
-import { dotObject } from './core';
+import { deepMerge, dotObject } from './core';
 import { colonRegExp, doubleQuoteRegExp, propertyValueKeyRegExp, singleQuoteRegExp } from './regexp';
 import { getSvgMetadata, removeDefaultTemplateValues } from './svg';
 
@@ -22,13 +22,20 @@ export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile
   const contextDefaultsSvg = getContextDefaults(fileObj.svg);
   const contextDefaultsCss = getContextDefaults(fileObj.css as string);
 
-  const contextInterfaceObject = Object.assign({}, contextInterfaceSvg, contextInterfaceCss);
+  console.log('=====================');
+  console.log(contextDefaultsSvg);
+  console.log(contextDefaultsCss);
+  console.log('=====================');
+  console.log(contextInterfaceSvg);
+  console.log(contextInterfaceCss);
+
+  const contextInterfaceObject = deepMerge(contextInterfaceSvg, contextInterfaceCss);
   const contextInterface = JSON.stringify(contextInterfaceObject)
     .replace(doubleQuoteRegExp, '')
     .replace(singleQuoteRegExp, ';');
 
   const contextInterfaceWithUUID = JSON.stringify(
-    Object.assign({ uuid: 'number' }, contextInterfaceSvg, contextInterfaceCss)
+    deepMerge(deepMerge({ uuid: 'number' }, contextInterfaceSvg), contextInterfaceCss)
   )
     .replace(doubleQuoteRegExp, '')
     .replace(singleQuoteRegExp, ';');
@@ -38,7 +45,7 @@ export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile
 
   const isSimpleUUIDInterface =
     Object.keys(contextInterfaceObject).length === 1 && contextInterfaceObject['uuid'] === 'number';
-  const contextDefaults = Object.assign({}, contextDefaultsSvg, contextDefaultsCss);
+  const contextDefaults = deepMerge(contextDefaultsSvg, contextDefaultsCss);
 
   const { svg, css, svgHash, path, name } = fileObj;
 
