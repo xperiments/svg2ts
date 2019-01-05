@@ -22,13 +22,6 @@ export function getSVG2TSOutputFile(fileObj: SVG2TSSourceFile): SVG2TSOutputFile
   const contextDefaultsSvg = getContextDefaults(fileObj.svg);
   const contextDefaultsCss = getContextDefaults(fileObj.css as string);
 
-  console.log('=====================');
-  console.log(contextDefaultsSvg);
-  console.log(contextDefaultsCss);
-  console.log('=====================');
-  console.log(contextInterfaceSvg);
-  console.log(contextInterfaceCss);
-
   const contextInterfaceObject = deepMerge(contextInterfaceSvg, contextInterfaceCss);
   const contextInterface = JSON.stringify(contextInterfaceObject)
     .replace(doubleQuoteRegExp, '')
