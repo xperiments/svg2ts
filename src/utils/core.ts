@@ -65,11 +65,12 @@ export function walkSync(dir: string, filelist: Array<string> = []): Array<strin
 }
 
 export function mkdirRecursiveSync(directory: string) {
-  var path = directory.replace(/\/$/, '').split('/');
+  let absolutePrefix = path.isAbsolute(directory) ? '/' : '';
+  const pathSegments: Array<string> = directory.replace(/\/$/, '').split('/');
 
-  for (var i = 1; i <= path.length; i++) {
-    var segment = path.slice(0, i).join('/');
-    !fs.existsSync(segment) ? fs.mkdirSync(segment) : null;
+  for (var i = 1; i <= pathSegments.length; i++) {
+    const segment = pathSegments.slice(0, i).join('/');
+    !fs.existsSync(absolutePrefix + segment) ? fs.mkdirSync(absolutePrefix + segment) : null;
   }
 }
 
