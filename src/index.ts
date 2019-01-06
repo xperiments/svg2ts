@@ -6,6 +6,8 @@ import { CommandLineTools } from './utils/cmd';
 
 const packageJson = require('../package.json');
 
+export * from './svg2ts';
+
 /**
  * Main command line entry point
  *
