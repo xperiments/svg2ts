@@ -40,10 +40,14 @@ export function isSVG(buffer: string) {
  * @param {string} viewBox
  * @returns {SVG2TSDimensions}
  */
-export function parseViewBox(viewBox: string): SVG2TSDimensions {
+export function parseViewBox(viewBox: string): SVG2TSDimensions | null {
   const [minx, miny, width, height] = viewBox.split(' ').map(_ => {
     return parseInt(_, 10);
   });
+
+  if (minx === undefined || miny === undefined || width === undefined || height === undefined) {
+    return null;
+  }
   return { minx, miny, width, height };
 }
 
@@ -59,10 +63,12 @@ export function parseSvgAttributes(root: string): SVG2TSSVGMetadata {
   const width = root.match(svgWidthRegExp);
   const height = root.match(svgHeightRegExp);
   const viewBox = root.match(svgViewBoxRegExp);
+  const parsedVb = viewBox ? parseViewBox(viewBox[2]) : null;
+  const parsedViewBox = viewBox ? (parsedVb ? parsedVb : null) : null;
   return {
     ...(width ? { width: width[2] } : {}),
     ...(height ? { height: height[2] } : {}),
-    ...(viewBox ? { viewBox: parseViewBox(viewBox[2]) } : {})
+    ...(parsedViewBox ? { viewBox: parsedViewBox } : {})
   };
 }
 
@@ -76,25 +82,29 @@ export function parseSvgAttributes(root: string): SVG2TSSVGMetadata {
 export function getSvgMetadata(svgFile: SVG2TSSourceFile): SVG2TSSVGMetadata {
   const root = svgFile.svg.match(svgRootRegExp);
 
-  // is valid svg?
-  if (root) {
-    const svgAttributes = parseSvgAttributes(root[0]);
-    // if svg width & height attributes are present
-    // compute dimensions from the attributes
-    if (svgAttributes.width && svgAttributes.height) {
-      return getSvgDimensions(svgAttributes);
-    }
-
-    // if not attributes are present get the dimensions from
-    // the viewVox attribute
-    if (svgAttributes.viewBox) {
-      return getSvgViewBoxDimensions(svgAttributes);
-    }
-
-    console.log(`[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`);
+  if (!root) {
+    console.log(`[svg2ts] \x1b[31mOmitting file: \x1b[33m${svgFile.path}\x1b[31m [Invalid SVG file] \x1b[0m`);
+    return {};
   }
-  console.log(`[svg2ts] \x1b[31mUnable to determine dimensions of: \x1b[33m${svgFile.path}\x1b[0m`);
-  return {};
+
+  const svgAttributes = parseSvgAttributes(root[0]);
+
+  if (
+    !(svgAttributes.viewBox && svgAttributes.viewBox.width && svgAttributes.viewBox.height) &&
+    !(svgAttributes.width && svgAttributes.width !== '' && svgAttributes.height && svgAttributes.height !== '')
+  ) {
+    console.log(`[svg2ts] \x1b[31mOmitting file: \x1b[33m${svgFile.path}\x1b[31m [Unknown Dimensions] \x1b[0m`);
+    return {};
+  }
+
+  // Try to get dimensions from the svg viewBox if present
+  if (svgAttributes.viewBox) {
+    return getSvgViewBoxDimensions(svgAttributes);
+  }
+
+  // If not viewBox use the with / height
+  // attributes for the viewBox value and assing 0 0 to origin
+  return getSvgDimensions(svgAttributes);
 }
 
 /**
@@ -109,7 +119,12 @@ export function getSvgDimensions(attrs: { [key: string]: any }): SVG2TSSVGMetada
   return {
     width,
     height,
-    ...(attrs.viewBox ? { viewBox: attrs.viewBox } : {})
+    viewBox: {
+      minx: 0,
+      miny: 0,
+      width,
+      height
+    }
   };
 }
 
@@ -139,7 +154,7 @@ export function getSvgViewBoxDimensions(attrs: { [key: string]: any }): SVG2TSSV
 
   return {
     height: '100%',
-    viewBox: { width: attrs.viewBox.width, height: attrs.viewBox.height },
+    viewBox: { minx: 0, miny: 0, width: attrs.viewBox.width, height: attrs.viewBox.height },
     width: '100%'
   };
 }
@@ -297,7 +312,11 @@ export function filterSvg(file: string) {
  * @returns {boolean}
  */
 export function filterSvgContent(svgFilePath: SVG2TSSourceFile): boolean {
-  return isSVG(svgFilePath.svg);
+  const svg = isSVG(svgFilePath.svg);
+  if (!svg) {
+    console.log(`[svg2ts] \x1b[31mOmitting file: \x1b[33m${svgFilePath.path}\x1b[31m [Invalid SVG file] \x1b[0m`);
+  }
+  return svg;
 }
 
 /**
@@ -309,5 +328,5 @@ export function filterSvgContent(svgFilePath: SVG2TSSourceFile): boolean {
  */
 export function filterKnownDimensions(fileObj: SVG2TSSourceFile) {
   const { width, height, viewBox } = getSvgMetadata(fileObj);
-  return (width && height) || (viewBox && viewBox.width && viewBox.height);
+  return (viewBox && viewBox.width && viewBox.height) || (width && height);
 }
