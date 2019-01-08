@@ -278,7 +278,7 @@ export class @{className}Component implements OnInit, AfterViewInit {
 
     const inline = document.createElement('div');
     inline.innerHTML = svg;
-    (inline.firstChild as SVGElement).classList.add(this._icon.svgHash + '-' + currentSeed);
+    (inline.firstChild as SVGElement).setAttribute('class', this._icon.svgHash + '-' + currentSeed);
 
     this._elementRef.nativeElement.querySelector('svg').appendChild(inline.firstChild);
   }
