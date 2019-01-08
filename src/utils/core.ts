@@ -7,6 +7,28 @@ import { extractSvgInlineStyles, removeSvgInlineStyles } from './svg';
 
 const burnedHashes: Array<string> = [];
 
+export function sanitizeFileName(fileName: string, replacement = '', truncate = 255, prefix = 'svg2ts') {
+  // https://github.com/parshap/node-sanitize-filename/blob/master/index.js
+  const illegalRe = /[\/\?<>\\:\*\|":]/g;
+  const illegalVarNamesRe = /["<>#%\{\}\|\\\^~\[\]`;\?:@=&]/g;
+  const controlRe = /[\x00-\x1f\x80-\x9f]/g;
+  const reservedRe = /^\.+$/;
+  const windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+  const windowsTrailingRe = /[\. ]+$/;
+
+  return path
+    .basename(fileName)
+    .replace('.svg', '')
+    .replace(illegalRe, replacement)
+    .replace(illegalVarNamesRe, replacement)
+    .replace(controlRe, replacement)
+    .replace(reservedRe, replacement)
+    .replace(windowsReservedRe, replacement)
+    .replace(windowsTrailingRe, replacement)
+    .replace(/(^\d)/, `${prefix}-$1`)
+    .substring(0, truncate);
+}
+
 export function loadSvgFile(options: SVG2TSCmd) {
   return (fileName: string): SVG2TSSourceFile => {
     const svg = fs.readFileSync(fileName, 'utf8').replace(lineBreaksRegExp, '');
@@ -14,7 +36,7 @@ export function loadSvgFile(options: SVG2TSCmd) {
     burnedHashes.push(svgHash);
     return {
       path: fileName,
-      name: path.basename(fileName).replace('.svg', ''),
+      name: sanitizeFileName(fileName),
       svg: removeSvgInlineStyles(svg),
       svgHash,
       css: extractSvgInlineStyles(svg, svgHash)
