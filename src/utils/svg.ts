@@ -136,20 +136,8 @@ export function getSvgDimensions(attrs: { [key: string]: any }): SVG2TSSVGMetada
  * @returns {SVG2TSSVGMetadata}
  */
 export function getSvgViewBoxDimensions(attrs: { [key: string]: any }): SVG2TSSVGMetadata {
-  const ratio = attrs.viewBox.width / attrs.viewBox.height;
-  if (attrs.width) {
-    return {
-      height: Math.floor(attrs.width / ratio),
-      ...(attrs.viewBox ? { viewBox: attrs.viewBox } : {}),
-      width: attrs.width
-    };
-  }
-  if (attrs.height) {
-    return {
-      height: attrs.height,
-      ...(attrs.viewBox ? { viewBox: attrs.viewBox } : {}),
-      width: Math.floor(attrs.height * ratio)
-    };
+  if (attrs.width && attrs.height) {
+    return { height: attrs.height, viewBox: attrs.viewBox, width: attrs.width };
   }
 
   return {
