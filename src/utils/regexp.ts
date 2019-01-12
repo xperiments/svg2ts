@@ -11,7 +11,7 @@ export const singleQuoteRegExp = /'/g;
 
 export const svgAttributeRegExp = / (\S+?)=['"]{{(.+?)}}['"]/g;
 export const svgHeightRegExp = /\bheight ?= ?(['"])([\d%]+?)\1/;
-export const svgIsSVG = /<svg[^>]+[^>]*>/;
+export const svgIsSVG = /<svg (.+?)?xmlns=["']http:\/\/www.w3.org\/2000\/svg["'](.+?)\s[^>]+>/;
 export const svgRootRegExp = /<svg\s[^>]+>/;
 export const svgScriptRegExp = /(<script(([^>][\s\S])+?)?>)([\s\S]+?)(<\/script>)/g;
 export const svgStyleRegExp = /(<style(([^>][\s\S])+?)?>)([\s\S]+?)(<\/style>)/g;

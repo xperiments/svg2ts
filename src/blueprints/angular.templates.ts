@@ -1,24 +1,23 @@
 import { tsc } from '../utils/core';
-import { SVG2TSOutputFile } from '../types';
 
 export interface AngularDynamicClassTemplate {
-    className: string;
-    selector: string;
+  className: string;
+  selector: string;
 }
 
 export const angularDynamicClassTemplate = tsc<AngularDynamicClassTemplate>(
-    `
-import {
+  `import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   Input,
   OnInit
 } from '@angular/core';
+
 import {
   @{className},
   @{className}Context,
-  getSVGViewbox
+  getSVGViewBox
 } from '../assets';
 
 @Component({
@@ -27,43 +26,54 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class @{className}Component implements OnInit {
-  static UUID = 0;
-  private _context: @{className}Context = @{className}.contextDefaults;
-  @Input() width: number | string = @{className}.width;
-  @Input() height: number | string = @{className}.height;
-  @Input() viewBox: string = getSVGViewbox(@{className}.viewBox);
+  public static UUID = 0;
+  public baseUrl: string;
+  @Input() public height: number | string = @{className}.height;
+  @Input() public viewBox: string = getSVGViewBox(@{className}.viewBox);
+  @Input() public width: number | string = @{className}.width;
   @Input()
-  set context(ctx: @{className}Context) {
+  public set context(ctx: @{className}Context) {
     this.updateContext(ctx);
   }
-  get context() {
-      return this._context;
+  public get context() {
+    return this._context;
   }
-  constructor(private ref: ChangeDetectorRef) {}
-  ngOnInit() {
+
+  private _context: @{className}Context = @{className}.contextDefaults;
+
+  constructor(private _ref: ChangeDetectorRef) {}
+
+  // TODO Move this to a Pipe
+  public getURLBase(value) {
+    return \\\`url('\\\${this.baseUrl}\\\${value}')\\\`;
+  }
+
+  // TODO Move this to a Pipe
+  public getXlinkBase(value) {
+    return \\\`\\\${this.baseUrl}\\\${value}\\\`;
+  }
+
+  public ngOnInit() {
+    this.baseUrl = window.location.href.replace(window.location.hash, '');
     this.context.uuid = @{className}Component.UUID++;
   }
-  updateContext(ctx: any) {
-    this._context = Object.assign(
-      {},
-      this._context ? this._context : @{className}.contextDefaults,
-      ctx
-    );
-    this.ref.markForCheck();
+
+  public updateContext(ctx: any) {
+    this._context = Object.assign({}, this._context ? this._context : @{className}.contextDefaults, ctx);
+    this._ref.markForCheck();
   }
 }
 `,
-    { className: '', selector: '' }
+  { className: '', selector: '' }
 );
 
 export interface AngularDynamicModuleTemplate {
-    moduleName: string;
-    components: string[];
+  moduleName: string;
+  components: Array<string>;
 }
 
 export const angularDynamicModuleTemplate = tsc<AngularDynamicModuleTemplate>(
-    `
-import { NgModule } from '@angular/core';
+  `import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   @{
@@ -89,54 +99,52 @@ const comps = [
 })
 export class @{moduleName}Module { }
 `,
-    {
-        moduleName: '',
-        components: []
-    }
+  {
+    moduleName: '',
+    components: []
+  }
+);
+
+export const assetsTemplate = tsc<any>(
+  `import {
+  @{assets.join(\',\\n  \')}
+} from '../assets';
+
+export const assetsMap = {
+  @{
+    assets.map((asset)=>{
+        return \`[\${asset}.name]: \${asset}\`;
+    }).join(',\\n  ')
+  }
+};
+`,
+  { assets: [] }
 );
 
 export interface SvgIconClassTemplate {
-    moduleName: string;
-    className: string;
-    selector: string;
-    components: { component: string; name: string }[];
-    assets: string[];
-    pascalCase: (str: string) => string;
+  moduleName: string;
+  className: string;
+  selector: string;
+  components: Array<{ component: string; name: string }>;
+  assets: Array<string>;
+  pascalCase: (str: string) => string;
 }
 export const svgIconClassTemplate = tsc<SvgIconClassTemplate>(
-    `
-export interface SVG2TSDimensions {
-  minx?: number | undefined;
-  miny?: number | undefined;
-  width?: number | undefined;
-  height?: number | undefined;
-}
-
-export interface SVG2TSFile {
-  name: string;
-  svg: string;
-  css?: string;
-  width?: string | undefined;
-  height?: string | undefined;
-  viewBox?: SVG2TSDimensions | undefined;
-  contextDefaults?: { [key: string]: string | number } | undefined;
-}
-
+  `
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ComponentFactoryResolver,
+  ElementRef,
   Input,
+  OnInit,
   ViewChild,
   ViewContainerRef,
-  OnInit
 } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
-import {
-  @{assets.join(\',\\n  \')}
-} from '../assets';
+import { assetsMap } from './\assets';
 
 @{
     components.map((component)=>{
@@ -144,18 +152,16 @@ import {
     }).join('\\n')
 }
 
-const assetsMap = {
+import {
   @{
-    assets.map((asset)=>{
-        return \`[\${asset}.name]: \${asset}\`;
-    }).join(',\\n  ')
-}
-};
+    components.map(component=>pascalCase(component.name)).join(',')
+  }
+} from '../assets';
 
 const componentsMap = {
-  @{
+@{
     components.map((component)=>{
-        return \`[\${component.component}.name]: \${component.component}Component\`;
+        return \`  [\${component.component}.name]: \${component.component}Component\`;
     }).join(',\\n  ')
 }
 };
@@ -169,8 +175,6 @@ const componentsMap = {
       [attr.width]="width"
       [attr.height]="height"
       [attr.viewBox]="getViewBox()"
-      [innerHTML] ="sanitizedFile"
-      [attr.class] ="templateClass"
       >
     </svg>
   </ng-container>
@@ -178,46 +182,42 @@ const componentsMap = {
   styles: [':host{ display: inline-block; position: relative; }'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class @{className}Component implements OnInit {
-  private _context: any;
-  @ViewChild('dynSvg', { read: ViewContainerRef })
-  viewContainerRef;
-  @Input() width: string | number = 0;
-  @Input() height: string | number = 0;
-  @Input() viewBox = '';
-  @Input()
-  set context(ctx) {
+export class @{className}Component implements OnInit, AfterViewInit {
+  private static SEED = 0;
+
+  @Input() public height: string | number = 0;
+  @Input() public viewBox = '';
+  @ViewChild('dynSvg', { read: ViewContainerRef }) public viewContainerRef;
+  @Input() public width: string | number = 0;
+
+  @Input() public set context(ctx) {
     this._context = ctx;
     if (this._iconComponent) {
       this._iconComponent.instance.context = ctx;
-      this.ref.markForCheck();
+      this._ref.markForCheck();
     }
   }
-  @Input()
-  set icon(icon: string) {
-    this.createIcon(icon);
+
+  @Input() public set icon(icon: string) {
+    this._createIcon(icon);
   }
-  get iconFile(): SVG2TSFile {
+
+  public get iconFile(): SVG2TSFile {
     return this._icon;
   }
 
-  sanitizedFile: SafeHtml;
-  _icon: SVG2TSFile;
+  private _context: any;
+  private _icon: SVG2TSFile;
   private _iconComponent;
+  private _isStaticIcon = false;
 
   constructor(
-    private ref: ChangeDetectorRef,
-    private sanitizer: DomSanitizer,
-    private componentFactoryResolver: ComponentFactoryResolver
+    private _ref: ChangeDetectorRef,
+    private _componentFactoryResolver: ComponentFactoryResolver,
+    private _elementRef: ElementRef
   ) {}
 
-  ngOnInit() {
-    if (this._context) {
-      this.context = this._context;
-    }
-  }
-
-  getViewBox() {
+  public getViewBox() {
     return this.viewBox !== ''
       ? this.viewBox
       : this._icon.viewBox
@@ -230,48 +230,75 @@ export class @{className}Component implements OnInit {
         : [0, 0, this._icon.width, this._icon.height].join(' ');
   }
 
-  private createIcon(icon: string) {
-      this._icon = assetsMap[icon];
-      if (!this._icon) {
-        return;
-      }
-      if (this._icon && !this._icon['contextDefaults']) {
-        this.createStaticIcon();
-      } else {
-        this.createDynamicIcon(icon);
-      }
+  public ngAfterViewInit() {
+    if (this._isStaticIcon) {
+      this._createStaticIcon();
+    }
   }
 
-  private createStaticIcon() {
-    this.width = this._icon.width;
-    this.height = this._icon.height;
-    const svg =
-      (this._icon.css
-        ? \\\`<style>\\\${this._icon.css.replace(
-            /.((?!})[\\\\S]+?){{uuid}}/g,
-            ''
-        )}</style>\\\`
-        : '') + \\\`\\\${this._icon.svg}\\\`;
-
-    this.sanitizedFile = this.sanitizer.bypassSecurityTrustHtml(svg);
+  public ngOnInit() {
+    if (this._context) {
+      this.context = this._context;
+    }
   }
 
-  private createDynamicIcon(icon: string) {
+  private _createDynamicIcon(icon: string) {
     const clazz = componentsMap[icon];
-    const factory = this.componentFactoryResolver.resolveComponentFactory<any>(
+    const factory = this._componentFactoryResolver.resolveComponentFactory<any>(
       clazz
     );
     this._iconComponent = this.viewContainerRef.createComponent(factory);
   }
 
+  private _createIcon(icon: string) {
+      this._icon = assetsMap[icon];
+      if (!this._icon) {
+        return;
+      }
+      if (this._icon && !this._icon['contextDefaults']) {
+        this._isStaticIcon = true;
+        this.width = this._icon.width;
+        this.height = this._icon.height;
+      } else {
+        this._createDynamicIcon(icon);
+      }
+  }
+
+  private _createStaticIcon() {
+    let svg = (this._icon.css
+      ? \\\`<style>\\\${this._icon.css.replace(
+        /.((?!})[\\\\S]+?){{uuid}}/g,
+        ''
+      )}</style>\\\`
+      : '') + \\\`<svg><g>\\\${this._icon.svg}</g></svg>\\\`;
+
+    const currentSeed = OneSvgCoreComponent.SEED++;
+    svg = svg.replace(/{{uuid}}/g, String(currentSeed));
+    svg = this._resolveBasePath(svg);
+
+    const inline = document.createElement('div');
+    inline.innerHTML = svg;
+    (inline.firstChild as SVGElement).setAttribute('class', this._icon.svgHash + '-' + currentSeed);
+
+    this._elementRef.nativeElement.querySelector('svg').appendChild(inline.firstChild);
+  }
+
+  private _resolveBasePath(svg: string) {
+    const baseUrl = window.location.href.replace(window.location.hash, '');
+
+    return svg
+      .replace(/xlink:href=["']#(.*?)["']/g, \\\`xlink: href = "\\\${baseUrl}#$1"\\\`)
+      .replace(/url\\\\([']?#(.*?)[']?\\\\)/g, \\\`url(\\\${ baseUrl }#$1)\\\`);
+  }
+
 }
 `,
-    {
-        moduleName: '',
-        className: '',
-        selector: '',
-        components: [],
-        assets: [],
-        pascalCase: (str: string): string => ''
-    }
+  {
+    moduleName: '',
+    className: '',
+    selector: '',
+    components: [],
+    assets: [],
+    pascalCase: (str: string): string => ''
+  }
 );

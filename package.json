@@ -1,36 +1,37 @@
 {
-    "name": "svg2ts",
-    "version": "0.2.4",
-    "description": "",
-    "main": "lib/index",
-    "bin": {
-        "svg2ts": "./lib/index.js"
-    },
-    "scripts": {
-        "postinstall": "node -e 'require(\"./lib/utils/banner\").playBanner()'",
-        "build": "tsc",
-        "prepublishOnly": "tsc",
-        "test":
-            "node ./lib/index.js -b typescript -i ./tests/svg-sources -o ./tests/ts-output"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/xperiments/svg2ts.git"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/xperiments/svg2ts/issues"
-    },
-    "homepage": "https://github.com/xperiments/svg2ts#readme",
-    "devDependencies": {
-        "@types/node": "^8.0.47",
-        "typescript": "^2.6.1"
-    },
-    "types": "lib/index",
-    "dependencies": {
-        "postcss": "^6.0.14",
-        "postcss-prefix-selector": "^1.6.0"
-    }
+  "name": "svg2ts",
+  "version": "0.3.6",
+  "description": "",
+  "main": "lib/index",
+  "bin": {
+    "svg2ts": "./lib/index.js"
+  },
+  "scripts": {
+    "postinstall": "node -e 'require(\"./lib/utils/banner\").playBanner()'",
+    "build": "tsc",
+    "prepublishOnly": "tsc",
+    "test": "node ./lib/index.js -b typescript -i ./tests/svg-sources -o ./tests/ts-output"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xperiments/svg2ts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xperiments/svg2ts/issues"
+  },
+  "homepage": "https://github.com/xperiments/svg2ts#readme",
+  "devDependencies": {
+    "@types/node": "^8.0.47",
+    "twit": "^2.2.11",
+    "typescript": "^2.6.1"
+  },
+  "types": "lib/index",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "postcss": "^6.0.14",
+    "postcss-prefix-selector": "^1.6.0"
+  }
 }
