@@ -69,7 +69,7 @@ export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputF
   fs.writeFileSync(filePath, indexFileContents);
 
   fs.writeFileSync(
-    `${options.output}${path.sep}${options.module}types.d.ts`,
+    `${options.output}${path.sep}types.d.ts`,
     `interface SVG2TSDimensions {
   height?: number | undefined;
   minx?: number | undefined;
@@ -89,4 +89,12 @@ interface SVG2TSFile {
 }
     `
   );
+}
+
+export function generateDotFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
+  const filePath = `${options.output}${path.sep}${options.module}.svgts`;
+
+  const exports = files.map(file => file.name);
+
+  fs.writeFileSync(filePath, JSON.stringify({ exports, files, module: options.module }, null, 2), 'utf-8');
 }

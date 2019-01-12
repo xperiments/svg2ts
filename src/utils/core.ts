@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { SVG2TSCmd, SVG2TSOutputFile, SVG2TSSourceFile } from '../types';
+import { SVG2TSCmd, SVG2TSSourceFile } from '../types';
 import { HashID } from './hash-id';
 import { lineBreaksRegExp } from './regexp';
 import { extractSvgInlineStyles, removeSvgInlineStyles } from './svg';
@@ -120,14 +120,6 @@ export function tsc<T>(template: string, context: T): (context: T) => string {
   }
   const fnTemplate = 'const {' + keys + '}=context; return`' + template + '`';
   return new Function('context', fnTemplate) as (context: T) => string;
-}
-
-export function generateDotFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
-  const filePath = `${options.output}${path.sep}${options.module}${path.sep}${options.module}.svgts`;
-
-  const exports = files.map(file => file.name);
-
-  fs.writeFileSync(filePath, JSON.stringify({ exports, files, module: options.module }, null, 2), 'utf-8');
 }
 
 export function hashCode(s: string) {

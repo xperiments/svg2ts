@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { SVG2TSCmd, SVG2TSOutputFile } from './types';
 import { banner } from './utils/banner';
-import { generateDotFile, loadSvgFile, walkSync } from './utils/core';
+import { loadSvgFile, walkSync } from './utils/core';
 import { getSVG2TSOutputFile } from './utils/reflection';
 import { filterKnownDimensions, filterSvg, filterSvgContent } from './utils/svg';
 
@@ -23,10 +23,12 @@ export function svg2ts(options: SVG2TSCmd) {
         // from the selected blueprint
         const {
           saveFile,
-          generateIndexFile
+          generateIndexFile,
+          generateDotFile
         }: {
           saveFile: (options: SVG2TSCmd) => (svgFile: SVG2TSOutputFile) => void;
           generateIndexFile: (options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) => void;
+          generateDotFile: (options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) => void;
         } = require(`./blueprints/${blueprint}`);
 
         // get svg files inside input folder filtered by extension

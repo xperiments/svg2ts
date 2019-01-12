@@ -8,8 +8,8 @@ import { compactSVG } from '../utils/svg';
 import {
   angularDynamicClassTemplate,
   angularDynamicModuleTemplate,
-  svgIconClassTemplate,
-  assetsTemplate
+  assetsTemplate,
+  svgIconClassTemplate
 } from './angular.templates';
 import { render as renderTS } from './typescript';
 
@@ -90,6 +90,48 @@ function getStaticSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     svgFile.svgHash + '-',
     '{{uuid}}-'
   );
+}
+
+function replaceIds(source: string, prefix: string = 'svg2ts-', postFix = '{{context.uuid}}-') {
+  let ids: Array<string> = [];
+  const foundIds = source.match(/id="(.*?)"/g);
+  if (foundIds) {
+    ids = foundIds.map(m => {
+      const a = m.match(/id="(.*?)"/);
+      if (a) {
+        return a[1];
+      }
+      return '';
+    });
+  }
+
+  // content
+  let result = ids.reduce((acc, id) => {
+    acc = acc
+      // prefix document id's
+      .replace(new RegExp('["\']' + id + '["\']', 'g'), `"${prefix}${postFix}${id}"`)
+      // replace document id refs
+      .replace(new RegExp('["\']#' + id + '["\']', 'g'), `"#${prefix}${postFix}${id}"`)
+      // replace document id refs in url's
+      .replace(new RegExp('url\\(#' + id + '\\)', 'g'), `url(#${prefix}${postFix}${id})`);
+
+    return acc;
+  }, source);
+
+  // styles
+  const styles = result.match(styleExtractRegExp);
+  if (styles) {
+    result = styles.reduce((acc, styleDef) => {
+      const styleDefSeedIds = ids.reduce((acc, id) => {
+        acc = acc.replace(new RegExp('#' + id + '', 'g'), `#${prefix}${postFix}${id}`);
+        return acc;
+      }, styleDef);
+
+      return acc.replace(styleDef, styleDefSeedIds);
+    }, result);
+  }
+
+  return result;
 }
 
 /**
@@ -254,44 +296,10 @@ interface SVG2TSFile {
   );
 }
 
-function replaceIds(source: string, prefix: string = 'svg2ts-', postFix = '{{context.uuid}}-') {
-  let ids: Array<string> = [];
-  const foundIds = source.match(/id="(.*?)"/g);
-  if (foundIds) {
-    ids = foundIds.map(m => {
-      const a = m.match(/id="(.*?)"/);
-      if (a) {
-        return a[1];
-      }
-      return '';
-    });
-  }
+export function generateDotFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
+  const filePath = `${options.output}${path.sep}${options.module}${path.sep}${options.module}.svgts`;
 
-  // content
-  let result = ids.reduce((acc, id) => {
-    acc = acc
-      // prefix document id's
-      .replace(new RegExp('["\']' + id + '["\']', 'g'), `"${prefix}${postFix}${id}"`)
-      // replace document id refs
-      .replace(new RegExp('["\']#' + id + '["\']', 'g'), `"#${prefix}${postFix}${id}"`)
-      // replace document id refs in url's
-      .replace(new RegExp('url\\(#' + id + '\\)', 'g'), `url(#${prefix}${postFix}${id})`);
+  const exports = files.map(file => file.name);
 
-    return acc;
-  }, source);
-
-  // styles
-  const styles = result.match(styleExtractRegExp);
-  if (styles) {
-    result = styles.reduce((acc, styleDef) => {
-      const styleDefSeedIds = ids.reduce((acc, id) => {
-        acc = acc.replace(new RegExp('#' + id + '', 'g'), `#${prefix}${postFix}${id}`);
-        return acc;
-      }, styleDef);
-
-      return acc.replace(styleDef, styleDefSeedIds);
-    }, result);
-  }
-
-  return result;
+  fs.writeFileSync(filePath, JSON.stringify({ exports, files, module: options.module }, null, 2), 'utf-8');
 }
