@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
+import { SVG2TSCmd, SVG2TSConfigProject, SVG2TSOutputFile } from '../types';
 import { mkdirRecursiveSync } from '../utils/core';
 import { styleExtractRegExp } from '../utils/regexp';
 import { kebabCase, pascalCase } from '../utils/strings';
@@ -21,7 +21,7 @@ import { render as renderTS } from './typescript';
  * @param {SVG2TSCmd} options
  * @returns {string}
  */
-function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
+function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd | SVG2TSConfigProject): string {
   // delete the contextInterface object from the file
   delete svgFile.contextInterface;
 
@@ -32,7 +32,7 @@ function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
   });
 }
 
-function getDynamicSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
+function getDynamicSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd | SVG2TSConfigProject) {
   // start with the fake "svg" definition
   let svgTemplate = `
       <fvg
@@ -72,7 +72,7 @@ function getDynamicSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
     .replace('</fvg>', '</svg>');
 }
 
-function getStaticSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd) {
+function getStaticSvg(svgFile: SVG2TSOutputFile, options: SVG2TSCmd | SVG2TSConfigProject) {
   // if css replace the {{uuid}} string coming from postcss
   // with a unique variable one based on the svg file name
   // and a "reemplazable" -svg2tsIndex
@@ -148,7 +148,6 @@ export function saveFile(options: SVG2TSCmd) {
 
     // determine file path
     const filePath = `${output}${path.sep}${module}${path.sep}assets${path.sep}${svgFile.name}.ts`;
-
     // create directory path if not exist
     const filePathDirectory = path.dirname(filePath);
     if (!fs.existsSync(filePathDirectory)) {
@@ -198,7 +197,7 @@ export function saveFile(options: SVG2TSCmd) {
  * @param {SVG2TSCmd} options
  * @param {Array<SVG2TSOutputFile>} files
  */
-export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
+export function generateIndexFile(options: SVG2TSCmd | SVG2TSConfigProject, files: Array<SVG2TSOutputFile>) {
   // generate an index.ts of svg's
   const indexFileExports = files
     .map((file: SVG2TSOutputFile) => {
@@ -296,7 +295,7 @@ interface SVG2TSFile {
   );
 }
 
-export function generateDotFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
+export function generateDotFile(options: SVG2TSCmd | SVG2TSConfigProject, files: Array<SVG2TSOutputFile>) {
   const filePath = `${options.output}${path.sep}${options.module}${path.sep}${options.module}.svgts`;
 
   const exports = files.map(file => file.name);

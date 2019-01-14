@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { SVG2TSCmd, SVG2TSOutputFile } from '../types';
+import { SVG2TSCmd, SVG2TSConfigProject, SVG2TSOutputFile } from '../types';
 import { mkdirRecursiveSync, printObj } from '../utils/core';
 import { getTypescriptInterfaceDescriptor } from '../utils/reflection';
 import { pascalCase } from '../utils/strings';
@@ -14,7 +14,7 @@ import { compactSVG } from '../utils/svg';
  * @param {SVG2TSCmd} options
  * @returns {string}
  */
-export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
+export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd | SVG2TSConfigProject): string {
   const contextInterface = getTypescriptInterfaceDescriptor(svgFile.contextInterface);
 
   if (contextInterface) {
@@ -35,7 +35,7 @@ export function render(svgFile: SVG2TSOutputFile, options: SVG2TSCmd): string {
  * @param {SVG2TSCmd} options
  * @returns
  */
-export function saveFile(options: SVG2TSCmd) {
+export function saveFile(options: SVG2TSCmd | SVG2TSConfigProject) {
   return (svgFile: SVG2TSOutputFile) => {
     const filePath = options.output + path.sep + svgFile.name + '.ts';
     // delete path from resulting object
@@ -56,7 +56,7 @@ export function saveFile(options: SVG2TSCmd) {
  * @param {SVG2TSCmd} options
  * @param {Array<SVG2TSOutputFile>} files
  */
-export function generateIndexFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
+export function generateIndexFile(options: SVG2TSCmd | SVG2TSConfigProject, files: Array<SVG2TSOutputFile>) {
   const filePath = options.output + path.sep + 'index.ts';
   const indexFileContents = files
     .map((file: SVG2TSOutputFile) => {
@@ -91,7 +91,7 @@ interface SVG2TSFile {
   );
 }
 
-export function generateDotFile(options: SVG2TSCmd, files: Array<SVG2TSOutputFile>) {
+export function generateDotFile(options: SVG2TSCmd | SVG2TSConfigProject, files: Array<SVG2TSOutputFile>) {
   const filePath = `${options.output}${path.sep}${options.module}.svgts`;
 
   const exports = files.map(file => file.name);

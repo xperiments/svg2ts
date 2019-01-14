@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { SVG2TSCmd, SVG2TSSourceFile } from '../types';
+import { SVG2TSSourceFile } from '../types';
 import { HashID } from './hash-id';
 import { lineBreaksRegExp } from './regexp';
 import { extractSvgInlineStyles, removeSvgInlineStyles } from './svg';
@@ -29,17 +29,27 @@ export function sanitizeFileName(fileName: string, replacement = '', truncate = 
     .substring(0, truncate);
 }
 
-export function loadSvgFile(options: SVG2TSCmd) {
+export function loadSvgFile() {
   return (fileName: string): SVG2TSSourceFile => {
-    const svg = fs.readFileSync(fileName, 'utf8').replace(lineBreaksRegExp, '');
+    let svg = fs.readFileSync(fileName, 'utf8').replace(lineBreaksRegExp, '');
     const svgHash = `ᗢ${HashID.generateUnique(burnedHashes)}`;
     burnedHashes.push(svgHash);
+
+    let css = '';
+    try {
+      css = extractSvgInlineStyles(svg, svgHash);
+      svg = removeSvgInlineStyles(svg);
+    } catch (e) {
+      svg = '';
+      console.log(`[svg2ts] \x1b[31mOmitting file: \x1b[33m${fileName}\x1b[31m [Invalid Css Contents] \x1b[0m`);
+    }
+
     return {
       path: fileName,
       name: sanitizeFileName(fileName),
-      svg: removeSvgInlineStyles(svg),
+      svg,
       svgHash,
-      css: extractSvgInlineStyles(svg, svgHash)
+      css
     };
   };
 }

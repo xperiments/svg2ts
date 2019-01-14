@@ -3,6 +3,19 @@ export interface SVG2TSCmd {
   input: string;
   blueprint: string;
   module: string;
+  config: SVG2TSConfigFile | string;
+}
+
+export interface SVG2TSConfigProject {
+  name: string;
+  files: Array<string>;
+  blueprint: string;
+  module: string;
+  output: string;
+}
+
+export interface SVG2TSConfigFile {
+  projects: Array<SVG2TSConfigProject>;
 }
 
 export interface SVG2TSContext {
