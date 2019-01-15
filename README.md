@@ -1,8 +1,9 @@
 # svg2ts
 
-Convert Standard SVG / Parameterized\* SVG to TypeScript code / Angular components.
+## Convert Standard SVG / Parameterized\* SVG to TypeScript code / Angular components.
 
-![svg2ts](svg2ts.gif)
+![svg2ts](docs/assets/svgts-dyn.png)
+![svg2ts](docs/assets/svgts-ng.png)
 
 ### Installation
 
@@ -19,6 +20,7 @@ svg2ts Usage:
   --output ./svg-ts-out   ts output dir
   --blueprint typescript  blueprint to use 'typescript'[default] 'angular'
   --module svg-to-ts      Module name for angular blueprint
+  --config svg2ts.json    Use an external config file
 ```
 
 ### Overview
@@ -95,7 +97,7 @@ It will also autogenerate an interface of the parameterized values.
 
 ### Isolation
 
-Svg id's and css styles will be namespaced with a unique key to prevent id and class collision at runtime.
+Svg id's and css styles will be namespaced with a unique key to prevent id's and class names collisions at runtime.
 
 For example, if we process this svg:
 
@@ -119,28 +121,39 @@ Will be converted to
 </svg>
 ```
 
-### Angular output
+### Angular
 
-**svg2ts** can also autogenerate an Angular module.
+**svg2ts** can generate an Angular module containing all the needed assets, and some components to help working with it.
 
-To do this use the Angular blueprint option in the command line:
+To do this use the Angular `--blueprint` option in the command line:
+
+#### Blueprint
 
 ```
-> svg2ts -i ./source ./dest --blueprint angular --module ng2-module-name
+> svg2ts -i ./source ./dest --blueprint angular
 ```
 
-You can also pass a module name with the --module option.
+#### Module
+
+You can provide a custom module name with the `--module` option or the default one (svg-to-ts) will be used.
+This module name will determine the `selector basename` of the resulting components.
+
+```
+> svg2ts -i ./source ./dest --blueprint angular --module my-module-name
+```
+
+#### Output
 
 The generated output will consist of:
 
-- An Angular **module** file
-- An **assets directory** with all the assets converted to typescript files
+- An Angular `module` file
+- An `assets directory` with all the assets converted to typescript files
 - A specific svg icon "base" component related to this module
-- A **components** directory containing the parameterized Angular Components
+- A `components` directory containing the parameterized Angular Components
 
-### Angular output module
+### Angular Usage
 
-Assuming we have used the default --module option name that is **svg-to-ts**
+Using the default --module option value `svg-to-ts`
 
 #### Importing
 
@@ -149,7 +162,7 @@ Import the module inside your app module.
 ```typescript
 @NgModule({
   ...
-  imports: [..., SvgToTsModule]
+  imports: [..., SvgToTsModule] // Generated Module Name
   ...
 })
 export class AppModule {}
@@ -160,10 +173,10 @@ Use it in the templates as:
 ##### Standard svg icons
 
 ```xml
-<svg-to-ts-svg [icon]="'print'"></svg-to-ts-svg>
+<svg-to-ts [icon]="'print'"></svg-to-ts>
 ```
 
-Where [icon] is the name property the svg typescript file.
+Where [icon] is the `name` property the `assets/print.ts` file.
 
 ```typescript
 export const Print = {
@@ -178,7 +191,7 @@ export const Print = {
 Default values:
 
 ```xml
-<svg-to-ts-svg [icon]="'parameterized'" [context]="customParamsObject"></svg-to-ts-svg>
+<svg-to-ts [icon]="'parameterized'" [context]="customParamsObject"></svg-to-ts>
 ```
 
 Custom values (parameterized.svg):
@@ -192,7 +205,7 @@ Custom values (parameterized.svg):
 Inside the angular component html
 
 ```xml
-<svg-to-ts-svg [icon]="'parameterized'" [context]="customParamsObject"></svg-to-ts-svg>
+<svg-to-ts [icon]="'parameterized'" [context]="customParamsObject"></svg-to-ts>
 ```
 
 Inside the angular component
