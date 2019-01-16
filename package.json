@@ -31,8 +31,8 @@
   "types": "lib/index",
   "dependencies": {
     "crypto": "^1.0.1",
+    "fast-glob": "^2.2.6",
     "postcss": "^6.0.14",
-    "postcss-prefix-selector": "^1.6.0",
-    "tiny-glob": "^0.2.6"
+    "postcss-prefix-selector": "^1.6.0"
   }
 }

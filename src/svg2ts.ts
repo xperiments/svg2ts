@@ -4,7 +4,7 @@ import { SVG2TSCmd, SVG2TSConfigFile, SVG2TSConfigProject, SVG2TSOutputFile } fr
 import { loadSvgFile, walkSync } from './utils/core';
 import { getSVG2TSOutputFile } from './utils/reflection';
 import { filterKnownDimensions, filterSvg, filterSvgContent } from './utils/svg';
-import glob = require('tiny-glob');
+import fg = require('fast-glob');
 
 export function svg2ts(options: SVG2TSCmd) {
   const { input, config } = options;
@@ -15,17 +15,12 @@ export function svg2ts(options: SVG2TSCmd) {
         const projects = (config as SVG2TSConfigFile).projects;
         projects.forEach(project => {
           project.output = path.resolve(process.cwd(), project.output);
-          let files: Array<string> = [];
-          Promise.all(
-            project.files.map(globPattern => {
-              return glob(globPattern, { absolute: true, cwd: process.cwd() }).then(globFiles => {
-                files = [...files, ...globFiles];
-                return globFiles;
-              });
-            })
-          ).then(() => {
-            processSvgFiles(files, project, resolve);
+
+          const files = fg.sync(project.files, {
+            transform: entry => (typeof entry === 'string' ? entry : entry.path)
           });
+
+          processSvgFiles(files, project, resolve);
         });
 
         return;
