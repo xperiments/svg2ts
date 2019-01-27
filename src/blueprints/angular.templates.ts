@@ -280,7 +280,7 @@ export class @{className}Component implements OnInit, AfterViewInit {
       )}</style>\\\`
       : '') + \\\`<svg><g>\\\${this._icon.svg}</g></svg>\\\`;
 
-    const currentSeed = OneSvgCoreComponent.SEED++;
+    const currentSeed = @{className}Component.SEED++;
     svg = svg.replace(/{{uuid}}/g, String(currentSeed));
     svg = this._resolveBasePath(svg);
 
