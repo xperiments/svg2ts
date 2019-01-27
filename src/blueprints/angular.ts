@@ -291,6 +291,12 @@ interface SVG2TSFile {
   viewBox?: SVG2TSDimensions | undefined;
   width?: string | undefined;
 }
+
+interface SVG2TSDynamic {
+  baseUrl: string;
+  context: any;
+  updateContext(ctx: any): void;
+}
     `
   );
 }
