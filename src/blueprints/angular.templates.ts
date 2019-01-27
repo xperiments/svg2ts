@@ -25,7 +25,7 @@ import {
   template: @{className}.svg,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class @{className}Component implements OnInit {
+export class @{className}Component implements SVG2TSDynamic, OnInit {
   public static UUID = 0;
   public baseUrl: string;
   @Input() public height: number | string = @{className}.height;
@@ -43,13 +43,12 @@ export class @{className}Component implements OnInit {
 
   constructor(private _ref: ChangeDetectorRef) {}
 
-  // TODO Move this to a Pipe
-  public getURLBase(value) {
-    return \\\`url('\\\${this.baseUrl}\\\${value}')\\\`;
+
+  public getURLBase(value: string) {
+    return \\\`url('\\\${this.getXlinkBase(value)}')\\\`;
   }
 
-  // TODO Move this to a Pipe
-  public getXlinkBase(value) {
+  public getXlinkBase(value: string) {
     return \\\`\\\${this.baseUrl}\\\${value}\\\`;
   }
 
@@ -130,18 +129,19 @@ export interface SvgIconClassTemplate {
   pascalCase: (str: string) => string;
 }
 export const svgIconClassTemplate = tsc<SvgIconClassTemplate>(
-  `
-import {
+  `import {
   AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ComponentFactoryResolver,
+  ComponentRef,
   ElementRef,
   Input,
   OnInit,
+  Renderer2,
   ViewChild,
-  ViewContainerRef,
+  ViewContainerRef
 } from '@angular/core';
 
 import { assetsMap } from './\assets';
@@ -170,15 +170,15 @@ const componentsMap = {
 @Component({
   selector: '@{selector}',
   template: \\\`
-  <ng-container *ngIf="!iconFile.contextDefaults">
     <svg
+      #staticSvg
       [attr.width]="width"
       [attr.height]="height"
       [attr.viewBox]="getViewBox()"
-      >
-    </svg>
-  </ng-container>
-  <ng-template #dynSvg></ng-template>\\\`,
+      [attr.hidden]="iconFile.contextDefaults"
+    ></svg>
+
+    <div [hidden]="!iconFile.contextDefaults"><ng-template #dynSvg></ng-template></div>\\\`,
   styles: [':host{ display: inline-block; position: relative; }'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -188,6 +188,7 @@ export class @{className}Component implements OnInit, AfterViewInit {
   @Input() public height: string | number = 0;
   @Input() public viewBox = '';
   @ViewChild('dynSvg', { read: ViewContainerRef }) public viewContainerRef;
+  @ViewChild('staticSvg') public staticSvg: ElementRef;
   @Input() public width: string | number = 0;
 
   @Input() public set context(ctx) {
@@ -208,13 +209,14 @@ export class @{className}Component implements OnInit, AfterViewInit {
 
   private _context: any;
   private _icon: SVG2TSFile;
-  private _iconComponent;
+  private _iconComponent: ComponentRef<SVG2TSDynamic>;
   private _isStaticIcon = false;
+  private _initialized = false;
 
   constructor(
     private _ref: ChangeDetectorRef,
     private _componentFactoryResolver: ComponentFactoryResolver,
-    private _elementRef: ElementRef
+    private _renderer: Renderer2
   ) {}
 
   public getViewBox() {
@@ -233,6 +235,7 @@ export class @{className}Component implements OnInit, AfterViewInit {
   public ngAfterViewInit() {
     if (this._isStaticIcon) {
       this._createStaticIcon();
+      this._initialized = true;
     }
   }
 
@@ -247,6 +250,7 @@ export class @{className}Component implements OnInit, AfterViewInit {
     const factory = this._componentFactoryResolver.resolveComponentFactory<any>(
       clazz
     );
+    this.viewContainerRef.clear();
     this._iconComponent = this.viewContainerRef.createComponent(factory);
   }
 
@@ -259,6 +263,10 @@ export class @{className}Component implements OnInit, AfterViewInit {
         this._isStaticIcon = true;
         this.width = this._icon.width;
         this.height = this._icon.height;
+        if (this._initialized) {
+          this._createStaticIcon();
+          this._ref.detectChanges();
+        }
       } else {
         this._createDynamicIcon(icon);
       }
@@ -276,11 +284,15 @@ export class @{className}Component implements OnInit, AfterViewInit {
     svg = svg.replace(/{{uuid}}/g, String(currentSeed));
     svg = this._resolveBasePath(svg);
 
-    const inline = document.createElement('div');
+    const inline = this._renderer.createElement('div');
     inline.innerHTML = svg;
-    (inline.firstChild as SVGElement).setAttribute('class', this._icon.svgHash + '-' + currentSeed);
+    this._renderer.setAttribute(inline.firstChild as SVGElement, 'class', this._icon.svgHash + '-' + currentSeed);
 
-    this._elementRef.nativeElement.querySelector('svg').appendChild(inline.firstChild);
+    const myNode = this.staticSvg.nativeElement;
+    if (myNode.firstChild) {
+      this._renderer.removeChild(myNode.firstChild.parentNode, myNode.firstChild);
+    }
+    myNode.appendChild(inline.firstChild);
   }
 
   private _resolveBasePath(svg: string) {
