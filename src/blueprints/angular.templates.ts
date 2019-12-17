@@ -187,8 +187,8 @@ export class @{className}Component implements OnInit, AfterViewInit {
 
   @Input() public height: string | number = 0;
   @Input() public viewBox = '';
-  @ViewChild('dynSvg', { read: ViewContainerRef }) public viewContainerRef;
-  @ViewChild('staticSvg') public staticSvg: ElementRef;
+  @ViewChild('dynSvg', { read: ViewContainerRef, static: true }) public viewContainerRef;
+  @ViewChild('staticSvg', {static: false }) public staticSvg: ElementRef;
   @Input() public width: string | number = 0;
 
   @Input() public set context(ctx) {
